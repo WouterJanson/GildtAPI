@@ -24,10 +24,23 @@ namespace Company.Function
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
-
+            User u = CreateTestUser();
+            string j = JsonConvert.SerializeObject(u);
             return name != null
-                ? (ActionResult)new OkObjectResult($"Hello, {name}")
+                ? (ActionResult)new OkObjectResult(j)
                 : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
+        public static User CreateTestUser(){
+            return new User(){name = "TestUser", email = "Test@email.com", password="TestPass", coupons = new int[]{0, 1}};
+        }
+
+    }
+
+
+    public class User{
+        public string name;
+        public string email;
+        public string password;
+        public int[] coupons;
     }
 }
