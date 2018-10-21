@@ -7,6 +7,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
 
@@ -16,24 +17,47 @@ namespace Company.Function
     {
         [FunctionName("Users")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
             ILogger log)
         {
             List<User> users = new List<User>();
-            var sqlStr = "SELECT * FROM Users WHERE";
+            var sqlStr = 
+                "SELECT Users.Id as UserId, Users.IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id as CouponId, Coupons.Name, Coupons.Description, Coupons.StartDate, Coupons.EndDate, Coupons.Type, Coupons.TotalUsed, Coupons.Image FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id";
+            var sqlUser = "SELECT Users.Id as UserId, Users.IsAdmin, Users.Username, Users.Email, Users.Password FROM Users";
+
+
             SqlConnection conn = DBConnect.GetConnection();
 
             using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = cmd.ExecuteReader();
+                DataTable schemaTable = reader.GetSchemaTable();
                 while (reader.Read())
                 {
+                    List<Coupon> couponsList = new List<Coupon>();
+
+                    couponsList.Add(
+                        new Coupon() {
+                            couponId = Convert.ToInt32(reader["CouponId"]),
+                            name = reader["Name"].ToString(),
+                            Description = reader["Description"].ToString(),
+                            startDate = DateTime.Parse(reader["StartDate"].ToString()),
+                            endDate = DateTime.Parse(reader["EndDate"].ToString()),
+                            type = Convert.ToInt32(reader["Type"].ToString()),
+                            totalUsed = Convert.ToInt32(reader["TotalUsed"]),
+                            image = reader["Image"].ToString()
+                        }
+                    );
+                    
                     users.Add(
                         new User(){
+                            userId = Convert.ToInt32(reader["UserId"]),
                             username = reader["Username"].ToString(), 
                             email = reader["Email"].ToString(), 
                             password = reader["Password"].ToString(),
-                             });
+                            coupons = couponsList
+                        }
+                    );
                 }
 
             }
@@ -66,9 +90,22 @@ namespace Company.Function
 
 
     public class User{
+        public int userId;
+        public bool IsAdmin;
         public string username;
         public string email;
         public string password;
-        // public int[] coupons;
+        public List<Coupon> coupons;
+    }
+
+    public class Coupon {
+        public int couponId;
+        public string name;
+        public string Description;
+        public DateTime startDate;
+        public DateTime endDate;
+        public int type;
+        public int totalUsed;
+        public string image;
     }
 }
