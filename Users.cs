@@ -8,35 +8,42 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Data.SqlClient;
+using System.Collections.Generic;
 
 namespace Company.Function
 {
     public static class Users
     {
-        static string connStr = "Server=tcp:gildt.database.windows.net,1433;Initial Catalog=GildtAPI;Persist Security Info=False;User ID=ServerAdmin;Password=Krijgdetering123!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
         [FunctionName("Users")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            using (SqlConnection conn = new SqlConnection(connStr))
-            {
-                conn.Open();
-                var sqlStr = "SELECT * FROM Users";
-                using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                {
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        var tes1 = reader["Username"].ToString();
-                        return (ActionResult)new OkObjectResult(tes1);
+            List<User> users = new List<User>();
+            var sqlStr = "SELECT * FROM Users WHERE";
+            SqlConnection conn = DBConnect.GetConnection();
 
-                    }
-                    reader.Close();
-                    return (ActionResult)new OkObjectResult("done");
-                    
+            using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                SqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    users.Add(
+                        new User(){
+                            username = reader["Username"].ToString(), 
+                            email = reader["Email"].ToString(), 
+                            password = reader["Password"].ToString(),
+                             });
                 }
+
             }
+            DBConnect.Dispose(conn);
+            
+            string j = JsonConvert.SerializeObject(users);
+
+            return users != null
+                ? (ActionResult)new OkObjectResult(j)
+                : new BadRequestObjectResult("No users where found");
 
             // log.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -51,17 +58,17 @@ namespace Company.Function
             //     ? (ActionResult)new OkObjectResult(j)
             //     : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
-        public static User CreateTestUser(){
-            return new User(){name = "TestUser", email = "Test@email.com", password="TestPass", coupons = new int[]{0, 1}};
-        }
+        // public static User CreateTestUser(){
+        //     return new User(){name = "TestUser", email = "Test@email.com", password="TestPass", coupons = new int[]{0, 1}};
+        // }
 
     }
 
 
     public class User{
-        public string name;
+        public string username;
         public string email;
         public string password;
-        public int[] coupons;
+        // public int[] coupons;
     }
 }
