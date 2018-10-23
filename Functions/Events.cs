@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using GildtAPI.Model;
 
 namespace GildtAPI
 {
@@ -79,20 +80,6 @@ namespace GildtAPI
         }
 
     }
-
-        public class Event
-    {
-        public int EventId;
-        public string name;
-        public DateTime DateTime;
-        public string image;
-        public string location;
-        public bool IsActive;
-        public string ShortDescription;
-        public string LongDescription;
-        public List<Event> events;
-    }
-
 }
 
 
