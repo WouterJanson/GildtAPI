@@ -30,7 +30,8 @@ namespace Company.Function
             var sqlStr = 
                 $"SELECT TOP {qCount} Users.Id as UserId, Users.IsAdmin as IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id " +
                 "as CouponId, Coupons.Name, Coupons.Description, Coupons.StartDate, Coupons.EndDate, Coupons.Type, Coupons.TotalUsed, Coupons.Image " +
-                "FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId";
+                "FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId " +
+                "INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id";
 
             SqlConnection conn = DBConnect.GetConnection();
 
