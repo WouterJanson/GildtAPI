@@ -23,15 +23,12 @@ namespace Company.Function
             List<User> users = new List<User>();
             var sqlStr = 
                 "SELECT Users.Id as UserId, Users.IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id as CouponId, Coupons.Name, Coupons.Description, Coupons.StartDate, Coupons.EndDate, Coupons.Type, Coupons.TotalUsed, Coupons.Image FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id";
-            var sqlUser = "SELECT Users.Id as UserId, Users.IsAdmin, Users.Username, Users.Email, Users.Password FROM Users";
-
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = cmd.ExecuteReader();
-                DataTable schemaTable = reader.GetSchemaTable();
                 while (reader.Read())
                 {
                     List<Coupon> couponsList = new List<Coupon>();
@@ -48,16 +45,46 @@ namespace Company.Function
                             image = reader["Image"].ToString()
                         }
                     );
-                    
-                    users.Add(
-                        new User(){
-                            userId = Convert.ToInt32(reader["UserId"]),
-                            username = reader["Username"].ToString(), 
-                            email = reader["Email"].ToString(), 
-                            password = reader["Password"].ToString(),
-                            coupons = couponsList
+
+                    if(users.Count == 0)
+                    {
+                        users.Add(
+                            new User(){
+                                userId = Convert.ToInt32(reader["UserId"]),
+                                username = reader["Username"].ToString(), 
+                                email = reader["Email"].ToString(), 
+                                password = reader["Password"].ToString(),
+                                coupons = couponsList
+                            }
+                        ); 
+                    }
+                    else
+                    {
+                        if(users.Exists(x => x.userId == Convert.ToInt32(reader["UserId"])))
+                        {
+                            foreach(User user in users.ToArray())
+                            {
+                                if(user.userId == Convert.ToInt32(reader["UserId"]))
+                                {
+                                    user.coupons.Add(couponsList[couponsList.Count - 1]);
+                                }
+                            }
                         }
-                    );
+                        else
+                        {
+                            users.Add(
+                                    new User(){
+                                        userId = Convert.ToInt32(reader["UserId"]),
+                                        username = reader["Username"].ToString(), 
+                                        email = reader["Email"].ToString(), 
+                                        password = reader["Password"].ToString(),
+                                        coupons = couponsList
+                                    }
+                                );
+                        }
+                    }
+
+                    
                 }
 
             }
