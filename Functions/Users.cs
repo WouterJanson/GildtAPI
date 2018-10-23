@@ -21,11 +21,16 @@ namespace Company.Function
             ILogger log)
         {
             List<User> users = new List<User>();
+            string qCount = req.Query["count"];
+            if(qCount == null)
+            {
+                qCount = "20";
+            }
+
             var sqlStr = 
-                "SELECT Users.Id as UserId, Users.IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id " +
+                $"SELECT TOP {qCount} Users.Id as UserId, Users.IsAdmin as IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id " +
                 "as CouponId, Coupons.Name, Coupons.Description, Coupons.StartDate, Coupons.EndDate, Coupons.Type, Coupons.TotalUsed, Coupons.Image " +
-                "FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId " +
-                "INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id";
+                "FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId";
 
             SqlConnection conn = DBConnect.GetConnection();
 
