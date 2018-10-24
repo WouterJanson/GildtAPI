@@ -17,11 +17,28 @@ namespace GildtAPI
     {
         [FunctionName("Events")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Events/{id?}")] HttpRequest req,
+            ILogger log, string id)
         {
+
             List<Event> events = new List<Event>();
-            var sqlStr = "SELECT [Id],[Name],[DateTime],[Image],[Location],[IsActive],[ShortDescription],[LongDescription] FROM[dbo].[Events]"; // get all events
+
+            string qCount = req.Query["count"];
+            if (qCount == null)
+            {
+                qCount = "20";
+            }
+
+            log.LogInformation("Test" + id);
+
+            var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.DateTime, Events.DateTime, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events"; // get all events
+            var sqlWhere = $" WHERE Events.Id = {id}";
+
+            // Checks if the id parameter is filled in
+            if (id != null)
+            {
+                sqlStr = sqlStr + sqlWhere;
+            }
 
             SqlConnection conn = DBConnect.GetConnection();
 
@@ -31,9 +48,9 @@ namespace GildtAPI
 
                 while (reader.Read())
                 {
-                    List<Event> eventsList = new List<Event>();
+                    //List<Event> eventsList = new List<Event>();
 
-                    eventsList.Add(new Event()
+                        events.Add(new Event()
                     {
                         EventId = Convert.ToInt32(reader["EventId"]),
                         name = reader["Name"].ToString(),
@@ -45,27 +62,6 @@ namespace GildtAPI
                         LongDescription = reader["LongDescription"].ToString()
                     }
                     );
-
-                    if (events.Count == 0)
-                    {
-                        events.Add(
-                            new Event()
-                            {
-                                EventId = Convert.ToInt32(reader["UserId"]),
-                               
-                            }
-                        );
-                    }
-                    //Event item = new Event();
-
-                    //item.EventId = Convert.ToInt32(reader["EventId"]);
-                    //item.name = reader["Name"].ToString();
-                    //item.DateTime = DateTime.Parse(reader["DateTime"].ToString());
-                    //item.image = reader["Image"].ToString();
-                    //item.location = reader["Image"].ToString();
-                    //item.IsActive = (bool)reader["IsActive"];
-                    //item.ShortDescription = reader["ShortDescription"].ToString();
-                    //item.LongDescription = reader["LongDescription"].ToString();
 
                 }
             }
