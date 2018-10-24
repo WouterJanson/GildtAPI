@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using GildtAPI.Model;
 
 namespace GildtAPI
 {
@@ -16,9 +17,18 @@ namespace GildtAPI
     {
         [FunctionName("SongRequest")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "get",Route ="SongRequest/{id?}")] HttpRequest req,
+            ILogger log,string id)
         {
+            List<SongRequests> AllRequests = new List<SongRequests>();
+            string qCount = req.Query["count"];
+            if (qCount == null)
+            {
+                qCount = "20";
+            }
+
+            var sqlAllRequests = $"SELECT TOP {qCount} SongRequest.Id AS SongRequestId ,SongRequest.Title ,SongRequest.Artist," +
+                                 "SongRequest.DateTime,SongRequest.Username FROM SongRequest"; 
 
             var sqlUpvotes = "SELECT SongRequest.Title, COUNT(SongRequestUpvotes.UserId) AS CountUpvotes" +
                              " FROM SongRequestUpvotes INNER JOIN SongRequest ON SongRequestUpvotes.RequestId = SongRequest.Id" +
@@ -28,27 +38,47 @@ namespace GildtAPI
                                "FROM SongRequestDownvotes INNER JOIN SongRequest ON SongRequestDownvotes.RequestId = SongRequest.Id" +
                                "GROUP BY SongRequest.Title";
 
+            var sqlWhere = $" WHERE SongRequest.Id = {id}";
+
+            if (id != null)
+            {
+                sqlAllRequests = sqlAllRequests + sqlWhere;
+            }
 
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            using (SqlCommand cmd = new SqlCommand(sqlDownvotes,conn))
+            using (SqlCommand cmd = new SqlCommand(sqlAllRequests, conn))
             {
+                 SqlDataReader reader = cmd.ExecuteReader();
 
-                List<SongRequestDownvotes> downvotes = new List<SongRequestDownvotes>();
+                
 
-                downvotes.Add(
-                    new SongRequestDownvotes());
+                while (reader.Read())
+                {
+                    //List<Event> eventsList = new List<Event>();
+
+                    AllRequests.Add(new SongRequests()
+                        {
+                            Id = Convert.ToInt32(reader["SongRequestId"]),
+                            Title = reader["Title"].ToString(),
+                            Artist = reader["Artist"].ToString(),
+                            DateTime = DateTime.Parse(reader["DateTime"].ToString()),
+                            Username = reader["Username"].ToString(),
+                            Upvotes = Convert.ToInt32(sqlUpvotes),
+                            Downvotes = Convert.ToInt32(sqlDownvotes)
+                    }
+                    );
+
+                }
 
             }
+            DBConnect.Dispose(conn);
+            string j = JsonConvert.SerializeObject(AllRequests);
 
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-            string name = req.Query["name"];
-
-            return name != null
-                ? (ActionResult)new OkObjectResult($"Hello, {name}")
-                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+                return AllRequests != null
+                ? (ActionResult)new OkObjectResult(j)
+                : new BadRequestObjectResult("No songs were found");
         }
 
 
