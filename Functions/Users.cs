@@ -17,8 +17,8 @@ namespace Company.Function
     {
         [FunctionName("Users")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Users/{id?}")] HttpRequest req,
+            ILogger log, string id)
         {
             List<User> users = new List<User>();
             string qCount = req.Query["count"];
@@ -27,12 +27,22 @@ namespace Company.Function
                 qCount = "20";
             }
 
+            log.LogInformation("Test" + id);
+
             var sqlStr = 
                 $"SELECT TOP {qCount} Users.Id as UserId, Users.IsAdmin as IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id " +
                 "as CouponId, Coupons.Name, Coupons.Description, Coupons.StartDate, Coupons.EndDate, Coupons.Type, Coupons.TotalUsed, Coupons.Image " +
                 "FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId " +
-                "INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id";
+                "INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id ";
+            var sqlWhere = $"WHERE UserId = {id}";
+            
+            // Checks if the id parameter is filled in
+            if(id != null)
+            {
+                sqlStr = sqlStr + sqlWhere;
+            }
 
+            //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
             using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
@@ -42,6 +52,7 @@ namespace Company.Function
                 {
                     List<Coupon> couponsList = new List<Coupon>();
 
+                    // Adds the coupon to the couponlist
                     couponsList.Add(
                         new Coupon() {
                             couponId = Convert.ToInt32(reader["CouponId"]),
@@ -55,6 +66,7 @@ namespace Company.Function
                         }
                     );
 
+                    // Checks if list users is empty
                     if(users.Count == 0)
                     {
                         users.Add(
@@ -69,6 +81,7 @@ namespace Company.Function
                     }
                     else
                     {
+                        // Search the user in the list and adds the coupon to it
                         if(users.Exists(x => x.userId == Convert.ToInt32(reader["UserId"])))
                         {
                             foreach(User user in users.ToArray())
@@ -82,21 +95,20 @@ namespace Company.Function
                         else
                         {
                             users.Add(
-                                    new User(){
-                                        userId = Convert.ToInt32(reader["UserId"]),
-                                        username = reader["Username"].ToString(), 
-                                        email = reader["Email"].ToString(), 
-                                        password = reader["Password"].ToString(),
-                                        coupons = couponsList
-                                    }
-                                );
+                                new User(){
+                                    userId = Convert.ToInt32(reader["UserId"]),
+                                    username = reader["Username"].ToString(), 
+                                    email = reader["Email"].ToString(), 
+                                    password = reader["Password"].ToString(),
+                                    coupons = couponsList
+                                }
+                            );
                         }
-                    }
-
-                    
+                    }           
                 }
-
             }
+
+            // Close the database connection
             DBConnect.Dispose(conn);
             
             string j = JsonConvert.SerializeObject(users);
@@ -104,23 +116,6 @@ namespace Company.Function
             return users != null
                 ? (ActionResult)new OkObjectResult(j)
                 : new BadRequestObjectResult("No users where found");
-
-            // log.LogInformation("C# HTTP trigger function processed a request.");
-
-            // string name = req.Query["name"];
-
-            // string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            // dynamic data = JsonConvert.DeserializeObject(requestBody);
-            // name = name ?? data?.name;
-            // User u = CreateTestUser();
-            // string j = JsonConvert.SerializeObject(u);
-            // return name != null
-            //     ? (ActionResult)new OkObjectResult(j)
-            //     : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
-        // public static User CreateTestUser(){
-        //     return new User(){name = "TestUser", email = "Test@email.com", password="TestPass", coupons = new int[]{0, 1}};
-        // }
-
     }
 }
