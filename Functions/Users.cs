@@ -21,25 +21,27 @@ namespace Company.Function
             ILogger log, string id)
         {
             List<User> users = new List<User>();
+            
             string qCount = req.Query["count"];
+            //Default count number - Used to select number of rows
             if(qCount == null)
             {
                 qCount = "20";
             }
-
-            log.LogInformation("Test" + id);
-
+            
             var sqlStr = 
                 $"SELECT TOP {qCount} Users.Id as UserId, Users.IsAdmin as IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id " +
                 "as CouponId, Coupons.Name, Coupons.Description, Coupons.StartDate, Coupons.EndDate, Coupons.Type, Coupons.TotalUsed, Coupons.Image " +
                 "FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId " +
                 "INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id ";
+            var sqlStr2 = 
+                $"SELECT u.Id as UserId, u.IsAdmin, u.Username, u.Email, u.Password, c.Id AS CouponId, c.Name, c.Description, c.StartDate, c.EndDate, c.Type, c.TotalUsed, c.Image FROM Users AS u LEFT JOIN UsersCoupons ON u.Id = UsersCoupons.UserId LEFT JOIN Coupons AS c ON UsersCoupons.CouponId = c.Id";
             var sqlWhere = $"WHERE UserId = {id}";
             
-            // Checks if the id parameter is filled in
+            // Checks if an id parameter is filled in
             if(id != null)
             {
-                sqlStr = sqlStr + sqlWhere;
+                // sqlStr = sqlStr + sqlWhere;
             }
 
             //Connects with the database
@@ -48,6 +50,7 @@ namespace Company.Function
             using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = cmd.ExecuteReader();
+            
                 while (reader.Read())
                 {
                     List<Coupon> couponsList = new List<Coupon>();
@@ -113,9 +116,9 @@ namespace Company.Function
             
             string j = JsonConvert.SerializeObject(users);
 
-            return users != null
+            return users.Count >= 1
                 ? (ActionResult)new OkObjectResult(j)
-                : new BadRequestObjectResult("No users where found");
+                : new NotFoundObjectResult("No users where found");
         }
     }
 }
