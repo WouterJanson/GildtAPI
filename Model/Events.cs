@@ -8,12 +8,14 @@ namespace GildtAPI.Model
     {
         public int EventId;
         public string name;
-        public DateTime DateTime;
+        public DateTime StartDate;
+        public DateTime EndDate;
         public string image;
         public string location;
         public bool IsActive;
         public string ShortDescription;
         public string LongDescription;
+
         public List<Event> events;
     }
 }

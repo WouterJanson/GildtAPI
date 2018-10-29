@@ -31,7 +31,7 @@ namespace GildtAPI
 
             log.LogInformation("Test" + id);
 
-            var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.DateTime, Events.DateTime, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events"; // get all events
+            var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events"; // get all events
             var sqlWhere = $" WHERE Events.Id = {id}";
 
             // Checks if the id parameter is filled in
@@ -54,9 +54,10 @@ namespace GildtAPI
                     {
                         EventId = Convert.ToInt32(reader["EventId"]),
                         name = reader["Name"].ToString(),
-                        DateTime = DateTime.Parse(reader["DateTime"].ToString()),
+                        StartDate = DateTime.Parse(reader["StartDate"].ToString()),
+                        EndDate = DateTime.Parse(reader["EndDate"].ToString()),
                         image = reader["Image"].ToString(),
-                        location = reader["Image"].ToString(),
+                        location = reader["location"].ToString(),
                         IsActive = (bool)reader["IsActive"],
                         ShortDescription = reader["ShortDescription"].ToString(),
                         LongDescription = reader["LongDescription"].ToString()
@@ -72,7 +73,7 @@ namespace GildtAPI
 
             return events != null
                 ? (ActionResult)new OkObjectResult(j)
-                : new BadRequestObjectResult("No users where found");
+                : new BadRequestObjectResult("No events where found");
         }
 
     }
