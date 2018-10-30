@@ -9,11 +9,16 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Data.SqlClient;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Net;
 
 namespace GildtAPI
 {
     public static class Rewards
     {
+        #region Get methods
         const int DEFAULTCOUNT = 20;
         [FunctionName("Rewards")]
         public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req, ILogger log)
@@ -228,6 +233,66 @@ namespace GildtAPI
             return new BadRequestObjectResult("Something weird happened.");
 
         }
+        #endregion
 
+        #region Post methods
+        [FunctionName("CreateReward")]
+        public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rewards/Create")] HttpRequest req, ILogger log)
+        {
+            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateReward)}");
+            // Read data from input
+            //var data = req.Content.ReadAsStringAsync().Result;
+            string name = req.Query["name"];
+            string description = req.Query["description"];
+
+
+            // Returns bad request if one of the input fields are not filled in
+            bool nameMissing = String.IsNullOrEmpty(name);
+            bool descMissing = String.IsNullOrEmpty(description);
+            if (nameMissing || descMissing)
+            {
+                string missingFieldsSummary = "Missing fields: " + 
+                    (nameMissing 
+                    ? (descMissing 
+                        ? "name, description" 
+                        : "name") 
+                    : "description");
+                return new BadRequestObjectResult(missingFieldsSummary);
+            }
+            // Queries
+            var sqlStr =
+            "INSERT INTO Rewards " +
+                $"(Name, Description) " +
+            "VALUES " +
+                $"('{name}', '{description}')";
+
+            var sqlGet =
+            "SELECT COUNT(*) FROM Rewards " +
+            $"WHERE (Name = '{name}')";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            //Checks if reward with name already exists
+            SqlCommand checkRewards = new SqlCommand(sqlGet, conn);
+            checkRewards.Parameters.AddWithValue("Name", name);
+            int existingRewards = (int)checkRewards.ExecuteScalar();
+            if (existingRewards > 0)
+            {
+                return new BadRequestObjectResult($"Reward named {name} already exists!");
+            }
+            else
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Close the database connection
+                DBConnect.Dispose(conn);
+                return new OkObjectResult("Successfully created the reward.");
+            }
+        }
+        #endregion
     }
 }
