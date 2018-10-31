@@ -81,7 +81,29 @@ namespace GildtAPI
                 : new BadRequestObjectResult("No songs were found");
         }
 
+        [FunctionName("DeleteSongRequest")]
+        public static async Task<IActionResult> DeleteSongRequest(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Request/Delete/{id}")] HttpRequest req,
+            ILogger log, string id)
+        {
+            var sqlStr = $"DELETE SongRequest WHERE Id = '{id}'";
+
+            SqlConnection conn = DBConnect.GetConnection();
 
 
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                    DBConnect.Dispose(conn);
+                    return (ActionResult)new OkObjectResult("Sucessfully deleted the user");
+                }
+            }
+            catch (InvalidCastException e)
+            {
+                return (ActionResult)new BadRequestObjectResult(e);
+            }
+        }
     }
 }

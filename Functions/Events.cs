@@ -10,13 +10,16 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using GildtAPI.Model;
+using System.Net.Http;
+using System.Collections.Specialized;
+using System.Net;
 
 namespace GildtAPI
 {
     public static class Events
     {
         [FunctionName("Events")]
-        public static async Task<IActionResult> Run(
+        public static async Task<IActionResult> GetEvents(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Events/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
@@ -76,6 +79,117 @@ namespace GildtAPI
                 : new BadRequestObjectResult("No events where found");
         }
 
+        [FunctionName("DeleteEvent")]
+        public static async Task<IActionResult> DeleteEvent(
+           [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Delete/{id}")] HttpRequest req,
+           ILogger log, string id)
+        {
+            var sqlStr = $"DELETE Events WHERE Id = '{id}'";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                    DBConnect.Dispose(conn);
+                    return (ActionResult)new OkObjectResult("Sucessfully deleted the event");
+                }
+            }
+            catch (InvalidCastException e)
+            {
+                return (ActionResult)new BadRequestObjectResult(e);
+            }
+        }
+
+        [FunctionName("AddEvent")]
+        public static async Task<HttpResponseMessage> AddEvent(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Add")] HttpRequestMessage req,
+            ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+            List<string> missingFields = new List<string>();
+
+            // Read data from input
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            string title = formData["title"];
+            string location = formData["location"];
+
+            DateTime dateTimeStart = DateTime.Parse(formData["dateTimeStart"]);
+            DateTime dateTimeEnd = DateTime.Parse(formData["dateTimeEnd"]);
+
+            string shortdescription = formData["shortdescription"];
+            string longdescription = formData["longdescription"];
+
+            string image = formData["image"];
+
+
+            // Queries
+            var sqlStr =
+            $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{title}', '{location}', '{dateTimeStart}', '{dateTimeEnd}', '{shortdescription}', '{longdescription}', '{image}', 'false')";
+
+            //var sqlGet =
+            //$"SELECT COUNT(*) FROM Events WHERE (Name = '{title}')";
+
+            //Checks if the input fields are filled in
+            if (title == null)
+            {
+                missingFields.Add("Event Name");
+            }
+            if (location == null)
+            {
+                missingFields.Add("Location");
+            }
+            if (dateTimeStart == null)
+            {
+                missingFields.Add("DateTime Start");
+            }
+            if (dateTimeEnd == null)
+            {
+                missingFields.Add("DateTime End");
+            }
+
+            // Returns bad request if one of the input fields are not filled in
+            if (missingFields.Any())
+            {
+                string missingFieldsSummary = String.Join(", ", missingFields);
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
+            }
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            //Checks if the Event is already added
+
+            //SqlCommand checkEvent = new SqlCommand(sqlGet, conn);
+            //checkEvent.Parameters.AddWithValue("Name", title);
+            //int EventExist = (int)checkEvent.ExecuteScalar();
+            //if (EventExist > 0)
+            //{
+            //    return req.CreateResponse(HttpStatusCode.BadRequest, "There is already an Event added with that name );
+            //}
+            //else
+            //{
+            //    using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            //    {
+            //        cmd.ExecuteNonQuery();
+            //    }
+
+            //    // Close the database connection
+            //    DBConnect.Dispose(conn);
+            //    return req.CreateResponse(HttpStatusCode.OK, "Successfully added the event");
+            //}
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                cmd.ExecuteNonQuery();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+            return req.CreateResponse(HttpStatusCode.OK, "Successfully added the event");
+        }
     }
 }
 
