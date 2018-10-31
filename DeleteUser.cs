@@ -15,7 +15,7 @@ namespace Company.Function
     {
         [FunctionName("DeleteUser")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Users/{id}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Users/Delete/{id}")] HttpRequest req,
             ILogger log, string id)
         {
             var sqlStr = $"DELETE User WHERE Id = '{id}'";

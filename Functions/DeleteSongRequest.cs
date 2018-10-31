@@ -15,7 +15,7 @@ namespace GildtAPI.Functions
     {
         [FunctionName("DeleteSongRequest")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "Users/{id}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "Request/Delete/{id}")] HttpRequest req,
             ILogger log, string id)
         {
             var sqlStr = $"DELETE SongRequest WHERE Id = '{id}'";
