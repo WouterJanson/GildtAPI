@@ -131,7 +131,7 @@ namespace Company.Function
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Users/Delete/{id}")] HttpRequest req,
             ILogger log, string id)
         {
-            var sqlStr = $"DELETE User WHERE Id = '{id}'";
+            var sqlStr = $"DELETE FROM Users WHERE Users.Id = '{id}'";
 
             SqlConnection conn = DBConnect.GetConnection();
 
