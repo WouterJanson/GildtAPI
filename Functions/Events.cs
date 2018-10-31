@@ -13,6 +13,7 @@ using GildtAPI.Model;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
+using System.Linq;
 
 namespace GildtAPI
 {
