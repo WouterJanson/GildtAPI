@@ -25,7 +25,8 @@ namespace Company.Function
             ILogger log, string id)
         {
             List<User> users = new List<User>();
-            
+            List<Coupon> couponsList = new List<Coupon>();
+
             string qCount = req.Query["count"];
             //Default count number - Used to select number of rows
             if(qCount == null)
@@ -33,86 +34,66 @@ namespace Company.Function
                 qCount = "20";
             }
             
-            var sqlStr = 
-                $"SELECT TOP {qCount} Users.Id as UserId, Users.IsAdmin as IsAdmin, Users.Username, Users.Email, Users.Password, Coupons.Id " +
-                "as CouponId, Coupons.Name, Coupons.Description, Coupons.StartDate, Coupons.EndDate, Coupons.Type, Coupons.TotalUsed, Coupons.Image " +
-                "FROM Users INNER JOIN UsersCoupons ON Users.Id = UsersCoupons.UserId " +
-                "INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id ";
-            var sqlStr2 = 
-                $"SELECT u.Id as UserId, u.IsAdmin, u.Username, u.Email, u.Password, c.Id AS CouponId, c.Name, c.Description, c.StartDate, c.EndDate, c.Type, c.TotalUsed, c.Image FROM Users AS u LEFT JOIN UsersCoupons ON u.Id = UsersCoupons.UserId LEFT JOIN Coupons AS c ON UsersCoupons.CouponId = c.Id";
-            var sqlWhere = $"WHERE UserId = {id}";
+            var sqlStrUsers = $"SELECT TOP {qCount}* FROM Users ";
+            var sqlStrCoupons = "SELECT * FROM UsersCoupons INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id";
+            var sqlWhere = $"WHERE Id = {id}";
             
             // Checks if an id parameter is filled in
             if(id != null)
             {
-                // sqlStr = sqlStr + sqlWhere;
+                sqlStrUsers = sqlStrUsers + sqlWhere;
             }
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
-            using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            using (SqlCommand cmdCoupons = new SqlCommand(sqlStrCoupons, conn))
             {
-                SqlDataReader reader = cmd.ExecuteReader();
-            
-                while (reader.Read())
+                SqlDataReader readerCoupons = cmdCoupons.ExecuteReader();
+                while(readerCoupons.Read())
                 {
-                    List<Coupon> couponsList = new List<Coupon>();
-
-                    // Adds the coupon to the couponlist
                     couponsList.Add(
                         new Coupon() {
-                            couponId = Convert.ToInt32(reader["CouponId"]),
-                            name = reader["Name"].ToString(),
-                            Description = reader["Description"].ToString(),
-                            startDate = DateTime.Parse(reader["StartDate"].ToString()),
-                            endDate = DateTime.Parse(reader["EndDate"].ToString()),
-                            type = Convert.ToInt32(reader["Type"].ToString()),
-                            totalUsed = Convert.ToInt32(reader["TotalUsed"]),
-                            image = reader["Image"].ToString()
+                            couponId = Convert.ToInt32(readerCoupons["CouponId"]),
+                            name = readerCoupons["Name"].ToString(),
+                            Description = readerCoupons["Description"].ToString(),
+                            startDate = DateTime.Parse(readerCoupons["StartDate"].ToString()),
+                            endDate = DateTime.Parse(readerCoupons["EndDate"].ToString()),
+                            type = Convert.ToInt32(readerCoupons["Type"].ToString()),
+                            totalUsed = Convert.ToInt32(readerCoupons["TotalUsed"]),
+                            image = readerCoupons["Image"].ToString(),
+                            UserId = Convert.ToInt32(readerCoupons["UserId"])
+                        }
+                    );
+                }
+                readerCoupons.Close();
+            }
+
+            using (SqlCommand cmdUsers = new SqlCommand(sqlStrUsers, conn))
+            {
+                SqlDataReader readerUsers = cmdUsers.ExecuteReader();
+                while(readerUsers.Read())
+                {
+                    List<Coupon> tempList = new List<Coupon>();
+                    foreach(Coupon coupons in couponsList)
+                    {
+                        if(coupons.UserId == Convert.ToInt32(readerUsers["id"]))
+                        {
+                            tempList.Add(coupons);
+                        }
+                    }
+                    users.Add(
+                        new User(){
+                            userId = Convert.ToInt32(readerUsers["id"]),
+                            username = readerUsers["Username"].ToString(), 
+                            email = readerUsers["Email"].ToString(), 
+                            password = readerUsers["Password"].ToString(),
+                            coupons = tempList
                         }
                     );
 
-                    // Checks if list users is empty
-                    if(users.Count == 0)
-                    {
-                        users.Add(
-                            new User(){
-                                userId = Convert.ToInt32(reader["UserId"]),
-                                username = reader["Username"].ToString(), 
-                                email = reader["Email"].ToString(), 
-                                password = reader["Password"].ToString(),
-                                coupons = couponsList
-                            }
-                        ); 
-                    }
-                    else
-                    {
-                        // Search the user in the list and adds the coupon to it
-                        if(users.Exists(x => x.userId == Convert.ToInt32(reader["UserId"])))
-                        {
-                            foreach(User user in users.ToArray())
-                            {
-                                if(user.userId == Convert.ToInt32(reader["UserId"]))
-                                {
-                                    user.coupons.Add(couponsList[couponsList.Count - 1]);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            users.Add(
-                                new User(){
-                                    userId = Convert.ToInt32(reader["UserId"]),
-                                    username = reader["Username"].ToString(), 
-                                    email = reader["Email"].ToString(), 
-                                    password = reader["Password"].ToString(),
-                                    coupons = couponsList
-                                }
-                            );
-                        }
-                    }           
                 }
+                readerUsers.Close();
             }
 
             // Close the database connection
@@ -128,7 +109,7 @@ namespace Company.Function
 
         [FunctionName("DeleteUser")]
         public static async Task<IActionResult> DeleteUser(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Users/Delete/{id}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Users/{id}/Delete")] HttpRequest req,
             ILogger log, string id)
         {
             var sqlStr = $"DELETE User WHERE Id = '{id}'";
@@ -213,6 +194,48 @@ namespace Company.Function
                 // Close the database connection
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully registered the user");
+            }
+        }
+    
+        [FunctionName("EditUser")]
+        public static async Task<HttpResponseMessage> EditUser(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route= "Users/{id}/Edit")] HttpRequestMessage req,
+            ILogger log, string id)
+        {
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            string username = formData["username"];
+            string email = formData["email"];
+            string password = formData["password"];
+            string isAdmin = formData["isadmin"];
+
+            string sqlStrUpdate = $"UPDATE Users SET " + 
+            $"Username = COALESCE({(username == null ? "NULL" : $"'{username}'")}, Username), " + 
+            $"Email = COALESCE({(email == null ? "NULL" : $"'{email}'")}, Email), " + 
+            $"Password = COALESCE({(password == null ? "NULL" : $"'{password}'")}, Password), " + 
+            $"IsAdmin = COALESCE({(isAdmin == null ? "NULL" : $"'{isAdmin}'")}, IsAdmin) " + 
+            $"WHERE Id = {id}";
+
+            SqlConnection conn = DBConnect.GetConnection();
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+                {
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch
+                    {
+                        return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid input type");
+                    }
+                    
+                }
+
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the user");
+            }
+            catch(InvalidCastException e)
+            {
+                return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
             }
         }
     }
