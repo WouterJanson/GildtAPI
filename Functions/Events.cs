@@ -26,6 +26,7 @@ namespace GildtAPI
         {
 
             List<Event> events = new List<Event>();
+            List<TagsEvents> tagsEvents = new List<TagsEvents>();
 
             string qCount = req.Query["count"];
             if (qCount == null)
@@ -36,6 +37,8 @@ namespace GildtAPI
             log.LogInformation("Test" + id);
 
             var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events"; // get all events
+            //var sqlStrTags = "SELECT * FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
+            var sqlStrTags = $"SELECT EventsTags.EventsId, Tags.Name, Tags.Id AS TagsId FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
             var sqlWhere = $" WHERE Events.Id = {id}";
 
             // Checks if the id parameter is filled in
@@ -46,29 +49,61 @@ namespace GildtAPI
 
             SqlConnection conn = DBConnect.GetConnection();
 
+            using (SqlCommand cmdTags = new SqlCommand(sqlStrTags, conn))
+            {
+                SqlDataReader readerTags = cmdTags.ExecuteReader();
+                while (readerTags.Read())
+                {
+                    tagsEvents.Add(
+                        new TagsEvents()
+                        {
+                            Tag = new Tag()
+                            {
+                                Id = Convert.ToInt32(readerTags["TagsId"]),
+                                Name = readerTags["Name"].ToString()
+                            },
+                            Event = new Event()
+                            {
+                                Id = Convert.ToInt32(readerTags["EventsId"])
+                            }
+                        }
+                    );
+                }
+                readerTags.Close();
+            }
+
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = cmd.ExecuteReader();
-
                 while (reader.Read())
                 {
-                    //List<Event> eventsList = new List<Event>();
-
-                        events.Add(new Event()
+                    List<Tag> tags = new List<Tag>();
+                    foreach (var tagEvent in tagsEvents)
                     {
-                        EventId = Convert.ToInt32(reader["EventId"]),
-                        name = reader["Name"].ToString(),
-                        StartDate = DateTime.Parse(reader["StartDate"].ToString()),
-                        EndDate = DateTime.Parse(reader["EndDate"].ToString()),
-                        image = reader["Image"].ToString(),
-                        location = reader["location"].ToString(),
-                        IsActive = (bool)reader["IsActive"],
-                        ShortDescription = reader["ShortDescription"].ToString(),
-                        LongDescription = reader["LongDescription"].ToString()
+                        if (tagEvent.Event.Id == Convert.ToInt32(reader["EventId"]))
+                        {
+                            tags.Add(tagEvent.Tag);
+                        }
+                    }
+
+                    events.Add(
+                        new Event()
+                        {
+                            Id = Convert.ToInt32(reader["EventId"]),
+                            Name = reader["Name"].ToString(),
+                            StartDate = DateTime.Parse(reader["StartDate"].ToString()),
+                            EndDate = DateTime.Parse(reader["EndDate"].ToString()),
+                            Image = reader["Image"].ToString(),
+                            Location = reader["location"].ToString(),
+                            IsActive = (bool)reader["IsActive"],
+                            ShortDescription = reader["ShortDescription"].ToString(),
+                            LongDescription = reader["LongDescription"].ToString(),
+                            Tags = tags.ToArray<Tag>()
                     }
                     );
 
                 }
+                reader.Close();
             }
 
             DBConnect.Dispose(conn);

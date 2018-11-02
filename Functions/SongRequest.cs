@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using GildtAPI.Model;
 
 namespace GildtAPI
@@ -27,18 +28,19 @@ namespace GildtAPI
                 qCount = "20";
             }
 
-            var sqlAllRequests = $"SELECT TOP {qCount} SongRequest.Id AS SongRequestId ,SongRequest.Title ,SongRequest.Artist," +
-                                 "SongRequest.DateTime,SongRequest.Username FROM SongRequest"; 
 
-            var sqlUpvotes = "SELECT SongRequest.Title, COUNT(SongRequestUpvotes.UserId) AS CountUpvotes" +
-                             " FROM SongRequestUpvotes INNER JOIN SongRequest ON SongRequestUpvotes.RequestId = SongRequest.Id" +
-                             "GROUP BY SongRequest.Title";
 
-            var sqlDownvotes = "SELECT SongRequest.Title, COUNT(SongRequestDownvotes.UserId) AS CountDownvotes " +
-                               "FROM SongRequestDownvotes INNER JOIN SongRequest ON SongRequestDownvotes.RequestId = SongRequest.Id" +
-                               "GROUP BY SongRequest.Title";
+            var sqlAllRequests = $"SELECT TOP { qCount} sr.Id AS RequestId,sr.DateTime ,sr.UserId, sr.Title, sr.Artist," +
+                                 " CASE WHEN uv.Upvotes IS NULL THEN 0 ELSE uv.Upvotes END as Upvotes, CASE WHEN dv.Downvotes IS NULL THEN 0 ELSE dv.Downvotes END as Downvotes " +
+                                 "FROM SongRequest AS sr " +
+                                 "LEFT JOIN( " +
+                                 "SELECT d.RequestId AS RequestID, COUNT(UserId) AS Downvotes FROM SongRequestUserVotes AS d WHERE d.Vote< 0 GROUP BY " +
+                                 "d.RequestId, d.Vote) as dv ON dv.RequestID = sr.Id " +
+                                 "LEFT JOIN( " +
+                                 "SELECT u.RequestId AS RequestID, COUNT(UserId) AS Upvotes FROM SongRequestUserVotes AS u WHERE u.Vote > 0 GROUP BY " +
+                                 "u.RequestId, u.Vote ) as uv ON sr.Id = uv.RequestID ";
 
-            var sqlWhere = $" WHERE SongRequest.Id = {id}";
+            var sqlWhere = $" WHERE RequestId = {id}";
 
             if (id != null)
             {
@@ -50,9 +52,9 @@ namespace GildtAPI
 
             using (SqlCommand cmd = new SqlCommand(sqlAllRequests, conn))
             {
-                 SqlDataReader reader = cmd.ExecuteReader();
+                SqlDataReader reader = await
+                    cmd.ExecuteReaderAsync();
 
-                
 
                 while (reader.Read())
                 {
@@ -60,13 +62,13 @@ namespace GildtAPI
 
                     AllRequests.Add(new SongRequests()
                         {
-                            Id = Convert.ToInt32(reader["SongRequestId"]),
+                            Id = Convert.ToInt32(reader["RequestId"]),
                             Title = reader["Title"].ToString(),
                             Artist = reader["Artist"].ToString(),
-                            DateTime = DateTime.Parse(reader["DateTime"].ToString()),
-                            Username = reader["Username"].ToString(),
-                            Upvotes = Convert.ToInt32(sqlUpvotes),
-                            Downvotes = Convert.ToInt32(sqlDownvotes)
+                           DateTime = DateTime.Parse(reader["DateTime"].ToString()),
+                            UserId = Convert.ToInt32(reader["UserId"]),
+                            Upvotes = Convert.ToInt32(reader["Upvotes"]),
+                            Downvotes = Convert.ToInt32(reader["Downvotes"])
                     }
                     );
 
@@ -83,7 +85,7 @@ namespace GildtAPI
 
         [FunctionName("DeleteSongRequest")]
         public static async Task<IActionResult> DeleteSongRequest(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Request/Delete/{id}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "Delete", Route = "SongRequest/{id}/")] HttpRequest req,
             ILogger log, string id)
         {
             var sqlStr = $"DELETE SongRequest WHERE Id = '{id}'";
@@ -95,15 +97,16 @@ namespace GildtAPI
             {
                 using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                 {
-                    cmd.ExecuteNonQuery();
+                    int affectedRows = cmd.ExecuteNonQuery();
                     DBConnect.Dispose(conn);
-                    return (ActionResult)new OkObjectResult("Sucessfully deleted the user");
+                    if (affectedRows == 0)
+                    {
+                        return new BadRequestObjectResult($"Deleting Songrequest failed: reward with id {id} does not exist!");
+                    }
+                    return (ActionResult)new OkObjectResult("Sucessfully deleted the Songrequest");
                 }
             }
-            catch (InvalidCastException e)
-            {
-                return (ActionResult)new BadRequestObjectResult(e);
-            }
+   
         }
     }
 }

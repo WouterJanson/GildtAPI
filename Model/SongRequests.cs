@@ -11,7 +11,7 @@ namespace GildtAPI.Model
         public string Title;
         public string Artist;
         public DateTime DateTime;
-        public string Username;
+        public int UserId;
         public int Upvotes;
         public int Downvotes;
     }
