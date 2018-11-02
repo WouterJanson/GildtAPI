@@ -17,5 +17,6 @@ namespace GildtAPI.Model
         public string LongDescription;
 
         public List<Event> events;
+        public List<Tag> tags { get; set; }
     }
 }

@@ -26,6 +26,7 @@ namespace GildtAPI
         {
 
             List<Event> events = new List<Event>();
+            List<Tag> tagsList = new List<Tag>();
 
             string qCount = req.Query["count"];
             if (qCount == null)
@@ -36,6 +37,8 @@ namespace GildtAPI
             log.LogInformation("Test" + id);
 
             var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events"; // get all events
+            //var sqlStrTags = "SELECT * FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
+            var sqlStrTags = $"SELECT EventsTags.EventsId, Tags.Name FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
             var sqlWhere = $" WHERE Events.Id = {id}";
 
             // Checks if the id parameter is filled in
@@ -46,15 +49,39 @@ namespace GildtAPI
 
             SqlConnection conn = DBConnect.GetConnection();
 
+            using (SqlCommand cmdTags = new SqlCommand(sqlStrTags, conn))
+            {
+                SqlDataReader readerTags = cmdTags.ExecuteReader();
+                while (readerTags.Read())
+                {
+                    tagsList.Add(
+                        new Tag()
+                        {
+                            //tagId = Convert.ToInt32(readerTags["TagsId"]),
+                            name = readerTags["Name"].ToString(),
+                            eventId = Convert.ToInt32(readerTags["EventsId"])
+                        }
+                    );
+                }
+                readerTags.Close();
+            }
+
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = cmd.ExecuteReader();
-
                 while (reader.Read())
                 {
-                    //List<Event> eventsList = new List<Event>();
+                    List<Tag> tempList = new List<Tag>();
+                    foreach (Tag tags in tagsList)
+                    {
+                        if (tags.eventId == Convert.ToInt32(reader["EventId"]))
+                        {
+                            tempList.Add(tags);
+                        }
+                    }
 
-                        events.Add(new Event()
+                   events.Add(
+                       new Event()
                     {
                         EventId = Convert.ToInt32(reader["EventId"]),
                         name = reader["Name"].ToString(),
@@ -64,11 +91,13 @@ namespace GildtAPI
                         location = reader["location"].ToString(),
                         IsActive = (bool)reader["IsActive"],
                         ShortDescription = reader["ShortDescription"].ToString(),
-                        LongDescription = reader["LongDescription"].ToString()
+                        LongDescription = reader["LongDescription"].ToString(),
+                        tags = tempList
                     }
                     );
 
                 }
+                reader.Close();
             }
 
             DBConnect.Dispose(conn);
