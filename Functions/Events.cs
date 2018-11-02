@@ -26,7 +26,7 @@ namespace GildtAPI
         {
 
             List<Event> events = new List<Event>();
-            List<Tag> tagsList = new List<Tag>();
+            List<TagsEvents> tagsEvents = new List<TagsEvents>();
 
             string qCount = req.Query["count"];
             if (qCount == null)
@@ -38,7 +38,7 @@ namespace GildtAPI
 
             var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events"; // get all events
             //var sqlStrTags = "SELECT * FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
-            var sqlStrTags = $"SELECT EventsTags.EventsId, Tags.Name FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
+            var sqlStrTags = $"SELECT EventsTags.EventsId, Tags.Name, Tags.Id AS TagsId FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
             var sqlWhere = $" WHERE Events.Id = {id}";
 
             // Checks if the id parameter is filled in
@@ -54,12 +54,18 @@ namespace GildtAPI
                 SqlDataReader readerTags = cmdTags.ExecuteReader();
                 while (readerTags.Read())
                 {
-                    tagsList.Add(
-                        new Tag()
+                    tagsEvents.Add(
+                        new TagsEvents()
                         {
-                            //tagId = Convert.ToInt32(readerTags["TagsId"]),
-                            name = readerTags["Name"].ToString(),
-                            eventId = Convert.ToInt32(readerTags["EventsId"])
+                            Tag = new Tag()
+                            {
+                                Id = Convert.ToInt32(readerTags["TagsId"]),
+                                Name = readerTags["Name"].ToString()
+                            },
+                            Event = new Event()
+                            {
+                                Id = Convert.ToInt32(readerTags["EventsId"])
+                            }
                         }
                     );
                 }
@@ -71,28 +77,28 @@ namespace GildtAPI
                 SqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    List<Tag> tempList = new List<Tag>();
-                    foreach (Tag tags in tagsList)
+                    List<Tag> tags = new List<Tag>();
+                    foreach (var tagEvent in tagsEvents)
                     {
-                        if (tags.eventId == Convert.ToInt32(reader["EventId"]))
+                        if (tagEvent.Event.Id == Convert.ToInt32(reader["EventId"]))
                         {
-                            tempList.Add(tags);
+                            tags.Add(tagEvent.Tag);
                         }
                     }
 
-                   events.Add(
-                       new Event()
-                    {
-                        EventId = Convert.ToInt32(reader["EventId"]),
-                        name = reader["Name"].ToString(),
-                        StartDate = DateTime.Parse(reader["StartDate"].ToString()),
-                        EndDate = DateTime.Parse(reader["EndDate"].ToString()),
-                        image = reader["Image"].ToString(),
-                        location = reader["location"].ToString(),
-                        IsActive = (bool)reader["IsActive"],
-                        ShortDescription = reader["ShortDescription"].ToString(),
-                        LongDescription = reader["LongDescription"].ToString(),
-                        tags = tempList
+                    events.Add(
+                        new Event()
+                        {
+                            Id = Convert.ToInt32(reader["EventId"]),
+                            Name = reader["Name"].ToString(),
+                            StartDate = DateTime.Parse(reader["StartDate"].ToString()),
+                            EndDate = DateTime.Parse(reader["EndDate"].ToString()),
+                            Image = reader["Image"].ToString(),
+                            Location = reader["location"].ToString(),
+                            IsActive = (bool)reader["IsActive"],
+                            ShortDescription = reader["ShortDescription"].ToString(),
+                            LongDescription = reader["LongDescription"].ToString(),
+                            Tags = tags.ToArray<Tag>()
                     }
                     );
 
