@@ -20,13 +20,12 @@ namespace GildtAPI
     {
         #region Get methods
         const int DEFAULTCOUNT = 20;
-        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
-        public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req, ILogger log)
+
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetAllRewards))]
+        public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Function, "get", Route = nameof(Rewards))] HttpRequest req, ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetAllRewards));
             string qCount = req.Query["count"];
-            string qUserId = req.Query["userId"];
-            int userId = -1;
             int count = DEFAULTCOUNT;
             if (qCount != null)
             {
@@ -36,29 +35,33 @@ namespace GildtAPI
                     return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
                 }
             }
-            if (qUserId == null)
-            {
-                //No user ID: return all rewards
-                string rewardsJson = JsonConvert.SerializeObject(GetAllRewards());
-                return new OkObjectResult(rewardsJson);
-            }
-            else
-            {
+            string rewardsJson = JsonConvert.SerializeObject(GetAllRewards());
+            return new OkObjectResult(rewardsJson);
+        }
 
-                if (!Int32.TryParse(qUserId, out userId))
-                {
-                    //userId not a number
-                    return new BadRequestObjectResult("userId is not a number. What are you doing?");
-                }
-                Reward[] userRewards = GetUserRewards(count, userId);
 
-                if (userRewards.Length == 0)
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
+        public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log, 
+            int userId)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
+            string qCount = req.Query["count"];
+            int count = DEFAULTCOUNT;
+            if (qCount != null)
+            {
+                if (!Int32.TryParse(qCount, out count) || count < 1)
                 {
-                    return (ActionResult)new OkObjectResult("No rewards for this user.");
+                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
                 }
-                string rewardsJson = JsonConvert.SerializeObject(userRewards);
-                return (ActionResult)new OkObjectResult(rewardsJson);
             }
+            Reward[] userRewards = GetUserRewards(count, userId);
+
+            if (userRewards.Length == 0)
+            {
+                return (ActionResult)new OkObjectResult("No rewards for this user.");
+            }
+            string rewardsJson = JsonConvert.SerializeObject(userRewards);
+            return (ActionResult)new OkObjectResult(rewardsJson);
         }
 
         private static Reward[] GetAllRewards()
@@ -124,7 +127,8 @@ namespace GildtAPI
         }
 
         [FunctionName(nameof(Rewards) + "-" + nameof(GetSingleReward))]
-        public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Function, "get", Route = "Rewards/{rewardId}")] HttpRequest req, ILogger log,
+            int rewardId)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetSingleReward));
 
@@ -195,7 +199,7 @@ namespace GildtAPI
                         "Name, " +
                         "Description " +
                     "FROM Rewards " +
-                   $"WHERE Rewards.Id = {qRewardId}";
+                   $"WHERE Rewards.Id = {rewardId}";
 
                 SqlConnection conn = DBConnect.GetConnection();
 
@@ -233,10 +237,12 @@ namespace GildtAPI
             return new BadRequestObjectResult("Something weird happened.");
 
         }
+
         #endregion
 
         #region Post methods
-        [FunctionName( nameof(Rewards) + "-" + nameof(CreateReward) )]
+
+        [FunctionName( nameof(Rewards) + "-" + nameof(CreateReward))]
         public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rewards/Create")] HttpRequest req, ILogger log)
         {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateReward)}");
@@ -300,8 +306,7 @@ namespace GildtAPI
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteReward)}");
 
             string rewardIdString = req.Query["rewardId"];
-            int rewardId;
-            if (String.IsNullOrEmpty(rewardIdString) || !int.TryParse(rewardIdString, out rewardId))
+            if (String.IsNullOrEmpty(rewardIdString) || !int.TryParse(rewardIdString, out int rewardId))
             {
                 return new BadRequestObjectResult("Invalid rewardId parameter.");
             }
@@ -316,15 +321,24 @@ namespace GildtAPI
             {
                 try
                 {
-                    cmd.ExecuteNonQuery();
+                    int affectedRows = cmd.ExecuteNonQuery();
+
+                    if (affectedRows == 0)
+                    {
+                        DBConnect.Dispose(conn);
+                        return new BadRequestObjectResult($"Deleting reward failed: reward with id {rewardId} does not exist!");
+                    }
+                    if (affectedRows > 1)
+                    {
+                        //multiple rows affected: something went wrong
+                        log.LogInformation($"Deleted multiple rewards when executing query to delete single reward: RewardId = {rewardId}");
+                    }
                 }
                 catch(Exception e)
                 {
                     return new BadRequestObjectResult($"SQL query failed: {e.Message}");
                 }
             }
-
-            // Close the database connection
             DBConnect.Dispose(conn);
 
             return new OkObjectResult("Successfully deleted the reward.");
