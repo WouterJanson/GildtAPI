@@ -25,7 +25,7 @@ namespace Company.Function
             ILogger log, string id)
         {
             List<User> users = new List<User>();
-            List<Coupon> couponsList = new List<Coupon>();
+            List<UsersCoupon> couponsList = new List<UsersCoupon>();
 
             string qCount = req.Query["count"];
             //Default count number - Used to select number of rows
@@ -49,11 +49,11 @@ namespace Company.Function
 
             using (SqlCommand cmdCoupons = new SqlCommand(sqlStrCoupons, conn))
             {
-                SqlDataReader readerCoupons = cmdCoupons.ExecuteReader();
+                SqlDataReader readerCoupons = await cmdCoupons.ExecuteReaderAsync();
                 while(readerCoupons.Read())
                 {
                     couponsList.Add(
-                        new Coupon() {
+                        new UsersCoupon() {
                             couponId = Convert.ToInt32(readerCoupons["CouponId"]),
                             name = readerCoupons["Name"].ToString(),
                             Description = readerCoupons["Description"].ToString(),
@@ -74,8 +74,8 @@ namespace Company.Function
                 SqlDataReader readerUsers = cmdUsers.ExecuteReader();
                 while(readerUsers.Read())
                 {
-                    List<Coupon> tempList = new List<Coupon>();
-                    foreach(Coupon coupons in couponsList)
+                    List<UsersCoupon> tempList = new List<UsersCoupon>();
+                    foreach(UsersCoupon coupons in couponsList)
                     {
                         if(coupons.UserId == Convert.ToInt32(readerUsers["id"]))
                         {
@@ -109,7 +109,7 @@ namespace Company.Function
 
         [FunctionName("DeleteUser")]
         public static async Task<IActionResult> DeleteUser(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Users/{id}/Delete")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Users/{id}")] HttpRequest req,
             ILogger log, string id)
         {
             var sqlStr = $"DELETE FROM Users WHERE Users.Id = '{id}'";
@@ -120,7 +120,7 @@ namespace Company.Function
             {
                 using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                 {
-                    cmd.ExecuteNonQuery();
+                    await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the user");
                 }
@@ -188,7 +188,7 @@ namespace Company.Function
             {
                 using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                 {
-                    cmd.ExecuteNonQuery();
+                    await cmd.ExecuteNonQueryAsync();
                 }
 
                 // Close the database connection
@@ -199,7 +199,7 @@ namespace Company.Function
     
         [FunctionName("EditUser")]
         public static async Task<HttpResponseMessage> EditUser(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route= "Users/{id}/Edit")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route= "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
@@ -222,7 +222,7 @@ namespace Company.Function
                 {
                     try
                     {
-                        cmd.ExecuteNonQuery();
+                        await cmd.ExecuteNonQueryAsync();
                     }
                     catch
                     {

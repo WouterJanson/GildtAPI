@@ -8,6 +8,6 @@ namespace Company.Function
         public string username { get; set; }
         public string email { get; set;}
         public string password { get; set; }
-        public List<Coupon> coupons { get; set; }
+        public List<UsersCoupon> coupons { get; set; }
     }
 }

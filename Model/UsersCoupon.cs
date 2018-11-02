@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class Coupon {
+public class UsersCoupon {
     public int couponId {get; set; }
     public string name { get; set; }
     public string Description { get; set; }
@@ -9,4 +9,5 @@ public class Coupon {
     public int type { get; set; }
     public int totalUsed { get; set; }
     public string image { get; set; }
+    public int? UserId {get; set; }
 }
