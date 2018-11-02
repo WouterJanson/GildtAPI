@@ -20,7 +20,7 @@ namespace GildtAPI
     {
         #region Get methods
         const int DEFAULTCOUNT = 20;
-        [FunctionName("Rewards")]
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
         public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req, ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
@@ -123,7 +123,7 @@ namespace GildtAPI
             return rewardsList.ToArray();
         }
 
-        [FunctionName("Reward")]
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetSingleReward))]
         public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req, ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetSingleReward));
@@ -236,7 +236,7 @@ namespace GildtAPI
         #endregion
 
         #region Post methods
-        [FunctionName("CreateReward")]
+        [FunctionName( nameof(Rewards) + "-" + nameof(CreateReward) )]
         public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rewards/Create")] HttpRequest req, ILogger log)
         {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateReward)}");
@@ -293,6 +293,45 @@ namespace GildtAPI
                 return new OkObjectResult("Successfully created the reward.");
             }
         }
+
+        [FunctionName( nameof(Rewards) + "-" + nameof(DeleteReward))]
+        public static async Task<IActionResult> DeleteReward([HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rewards/Delete")] HttpRequest req, ILogger log)
+        {
+            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteReward)}");
+
+            string rewardIdString = req.Query["rewardId"];
+            int rewardId;
+            if (String.IsNullOrEmpty(rewardIdString) || !int.TryParse(rewardIdString, out rewardId))
+            {
+                return new BadRequestObjectResult("Invalid rewardId parameter.");
+            }
+
+            // Queries
+            var sqlStr =
+            "DELETE FROM Rewards " +
+            $"WHERE Id = {rewardId}";
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                try
+                {
+                    cmd.ExecuteNonQuery();
+                }
+                catch(Exception e)
+                {
+                    return new BadRequestObjectResult($"SQL query failed: {e.Message}");
+                }
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+
+            return new OkObjectResult("Successfully deleted the reward.");
+        }
+
         #endregion
+
+
     }
 }
