@@ -9,4 +9,5 @@ public class Coupon {
     public int type { get; set; }
     public int totalUsed { get; set; }
     public string image { get; set; }
+    public int UserId {get; set; }
 }
