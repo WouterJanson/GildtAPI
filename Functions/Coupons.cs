@@ -63,8 +63,8 @@ namespace Company.Function
         }
         
         [FunctionName("DeleteCoupons")]
-        public static async Task<IActionResult> DeleteCoupons(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Coupons/{id}")] HttpRequest req,
+        public static async Task<IActionResult> DeleteCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Coupons/{id}")] HttpRequest req,
             ILogger log, string id)
         {
             var sqlStrDelete = $"DELETE Coupons WHERE Id = {id}";
@@ -87,8 +87,8 @@ namespace Company.Function
         }
 
         [FunctionName("EditCoupon")]
-        public static async Task<HttpResponseMessage> EditCoupons(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Coupons/{id}")] HttpRequestMessage req,
+        public static async Task<HttpResponseMessage> EditCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
             ILogger log, string id)
             {
                 NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
@@ -131,5 +131,83 @@ namespace Company.Function
                     return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
                 }
             }
+    
+        [FunctionName("AddCoupon")]
+        public static async Task<HttpResponseMessage> AddCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons")] HttpRequestMessage req,
+            ILogger log, string id)
+        {
+            List<string> missingFields = new List<string>();
+
+            // Read data from input
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            string name = formData["Name"];
+            string description = formData["Description"];
+            string startDate = formData["StartDate"];
+            string endDate = formData["EndDate"];
+            string type = formData["Type"];
+            string image = formData["Image"];
+
+            var sqlStr =
+                $"INSERT INTO Coupons (Name, Description, StartDate, EndDate, Type, Image) VALUES ('{name}', '{description}', '{startDate}', '{endDate}', '{type}', '{image}')";
+            var sqlGet =
+                $"SELECT COUNT(*) FROM Coupons WHERE Name = {name}";
+
+            //Checks if the input fields are filled in
+            if (name == null)
+            {
+                missingFields.Add("Name");
+            }
+            if (description == null)
+            {
+                missingFields.Add("Description");
+            }
+            if (startDate == null)
+            {
+                missingFields.Add("Start Date");
+            }
+            if (endDate == null)
+            {
+                missingFields.Add("End Date");
+            }
+            if (type == null)
+            {
+                missingFields.Add("Type");
+            }
+            if (image == null)
+            {
+                missingFields.Add("Image");
+            }
+
+            // Returns bad request if one of the input fields are not filled in
+            if (missingFields.Any())
+            {
+                string missingFieldsSummary = String.Join(", ", missingFields);
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
+            }
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            //Checks if the username or email is already registered
+            SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
+            checkCoupon.Parameters.AddWithValue("Name", name);
+            int CouponExist = (int)checkCoupon.ExecuteScalar();
+            if (CouponExist > 0)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "There is already a coupon registered with the same name");
+            }
+            else
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Close the database connection
+                DBConnect.Dispose(conn);
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully added the coupon");
+            }
+        }
     }
 }
