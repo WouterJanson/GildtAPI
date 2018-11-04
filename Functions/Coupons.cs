@@ -189,7 +189,7 @@ namespace Company.Function
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
-            //Checks if the username or email is already registered
+            //Checks if the coupon is already registered
             SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
             checkCoupon.Parameters.AddWithValue("Name", name);
             int CouponExist = (int)checkCoupon.ExecuteScalar();
@@ -208,6 +208,44 @@ namespace Company.Function
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the coupon");
             }
+        }
+
+        [FunctionName("SignupCoupon")]
+        public static async Task<IActionResult> SignupCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons/{id}/Signup")] HttpRequest req,
+            ILogger log, string id)
+        {
+            string user = req.Query["UserId"];
+            if(user == null)
+            {
+                return (ActionResult)new BadRequestObjectResult("Missing query parameter UserId.");
+            }
+
+            //Query
+            var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES ('{user}', '{id}'";
+            var sqlGet =
+                $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = '{id}' AND UserId = '{user}'";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
+            checkCoupon.Parameters.AddWithValue("CouponId", id);
+            checkCoupon.Parameters.AddWithValue("UserId", user);
+            int CouponExist = (int)checkCoupon.ExecuteScalar();
+            if(CouponExist > 0)
+            {
+                return (ActionResult)new BadRequestObjectResult("This coupon is already registered by the user");
+            }
+            else
+            {
+                using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                DBConnect.Dispose(conn);
+                return (ActionResult)new OkObjectResult("Succesfully signed up the coupon.");
+            }    
         }
     }
 }
