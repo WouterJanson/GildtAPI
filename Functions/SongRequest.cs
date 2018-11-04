@@ -119,14 +119,11 @@ namespace GildtAPI
                 }
                 catch (Exception e)
                 {
-                    return new BadRequestObjectResult($"SQL query failed: {e.Message}");
+                    return new BadRequestObjectResult(e);
                 }
             }
 
-            DBConnect.Dispose(conn);
-
-            return new OkObjectResult("Successfully deleted the songrequest");
-
+          
         }
 
         [FunctionName("AddSongRequest")]
