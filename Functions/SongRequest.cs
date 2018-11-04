@@ -187,29 +187,19 @@ namespace GildtAPI
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"UserId is not a valid number.");
             }
 
-            
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-            //Checks if the UserID is in the database
-            SqlCommand checkUserId = new SqlCommand(sqlStr, conn);
-            checkUserId.Parameters.AddWithValue("UserId", UserId);
-            int UserExist = (int)checkUserId.ExecuteScalar();
-            if (UserExist > 0)
-            {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                {
-                    cmd.ExecuteNonQuery();
-                }
 
-            }
-            else
+            ////Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+    
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "No such account with given UserId");
+                cmd.ExecuteNonQuery();
             }
+
             // Close the database connection
             DBConnect.Dispose(conn);
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added the song request");
-
 
 
         }
