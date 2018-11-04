@@ -67,15 +67,15 @@ namespace GildtAPI
                     //List<Event> eventsList = new List<Event>();
 
                     AllRequests.Add(new SongRequests()
-                        {
-                            Id = Convert.ToInt32(reader["RequestId"]),
-                            Title = reader["Title"].ToString(),
-                            Artist = reader["Artist"].ToString(),
-                            DateTime = DateTime.Parse(reader["DateTime"].ToString()),
-                            UserId = Convert.ToInt32(reader["UserId"]),
-                            Upvotes = Convert.ToInt32(reader["Upvotes"]),
-                            Downvotes = Convert.ToInt32(reader["Downvotes"])
-                        }
+                    {
+                        Id = Convert.ToInt32(reader["RequestId"]),
+                        Title = reader["Title"].ToString(),
+                        Artist = reader["Artist"].ToString(),
+                        DateTime = DateTime.Parse(reader["DateTime"].ToString()),
+                        UserId = Convert.ToInt32(reader["UserId"]),
+                        Upvotes = Convert.ToInt32(reader["Upvotes"]),
+                        Downvotes = Convert.ToInt32(reader["Downvotes"])
+                    }
                     );
 
                 }
@@ -86,7 +86,7 @@ namespace GildtAPI
             string j = JsonConvert.SerializeObject(AllRequests);
 
             return AllRequests != null
-                ? (ActionResult) new OkObjectResult(j)
+                ? (ActionResult)new OkObjectResult(j)
                 : new BadRequestObjectResult("No songs were found");
         }
 
@@ -115,7 +115,7 @@ namespace GildtAPI
                             $"Deleting Songrequest failed: reward with id {id} does not exist!");
                     }
 
-                    return (ActionResult) new OkObjectResult("Sucessfully deleted the Songrequest");
+                    return (ActionResult)new OkObjectResult("Sucessfully deleted the Songrequest");
                 }
                 catch (Exception e)
                 {
@@ -143,13 +143,13 @@ namespace GildtAPI
             string Title = formData["Title"];
             string Artist = formData["Artist"];
             DateTime DateTime = DateTime.Parse(formData["DateTime"]);
-            string qUserId = formData["UserId"];
+            string UserId = formData["UserId"];
 
 
             // Queries
             var sqlStr =
                 $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
-                $"VALUES ('{Title}', '{Artist}', '{DateTime}', '{qUserId}')";
+                $"VALUES ('{Title}', '{Artist}', '{DateTime}', '{UserId}')";
 
 
 
@@ -159,14 +159,14 @@ namespace GildtAPI
                 missingFields.Add("Title");
             }
 
-            if (qUserId == null)
+            if (UserId == null)
             {
                 missingFields.Add("UserId");
             }
 
             if (Artist == null)
             {
-                missingFields.Add("Location");
+                missingFields.Add("Artist");
             }
 
             if (DateTime == null)
@@ -181,24 +181,36 @@ namespace GildtAPI
                 string missingFieldsSummary = String.Join(", ", missingFields);
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
-
-            if (!int.TryParse(qUserId, out int userId) || userId < 0)
+            //controleren of userId niet kleinder als 0 is ivm auto increment
+            if (!int.TryParse(UserId, out int userId) || userId < 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"UserId is not a valid number.");
             }
 
+            
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
-
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            //Checks if the UserID is in the database
+            SqlCommand checkUserId = new SqlCommand(sqlStr, conn);
+            checkUserId.Parameters.AddWithValue("UserId", UserId);
+            int UserExist = (int)checkUserId.ExecuteScalar();
+            if (UserExist > 0)
             {
-                cmd.ExecuteNonQuery();
-            }
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
 
+            }
+            else
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "No such account with given UserId");
+            }
             // Close the database connection
             DBConnect.Dispose(conn);
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added the song request");
+
+
 
         }
     }
