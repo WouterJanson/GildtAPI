@@ -291,6 +291,38 @@ namespace GildtAPI
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added tags to the event");
 
         }
+
+
+        [FunctionName("DeleteTags")]
+        public static async Task<IActionResult> DeleteTags(
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Delete/{id}")] HttpRequest req,
+        ILogger log, string id)
+        {
+            var sqlStr = $"DELETE EventsTags WHERE EventsId = '{id}'";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            try
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    int affectedRows = cmd.ExecuteNonQuery();
+                    //cmd.ExecuteNonQuery();
+                    DBConnect.Dispose(conn);
+                    if (affectedRows == 0)
+                    {
+                        return new BadRequestObjectResult(
+                            $"Deleting TAGS failed: EventId {id} does not have any tags!");
+                    }
+                    return (ActionResult)new OkObjectResult("Sucessfully deleted the tags of the event");
+                }
+            }
+            catch (InvalidCastException e)
+            {
+                return (ActionResult)new BadRequestObjectResult(e);
+            }
+        }
+
     }
 }
 
