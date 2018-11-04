@@ -37,7 +37,6 @@ namespace GildtAPI
             log.LogInformation("Test" + id);
 
             var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events"; // get all events
-            //var sqlStrTags = "SELECT * FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
             var sqlStrTags = $"SELECT EventsTags.EventsId, Tags.Name, Tags.Id AS TagsId FROM EventsTags INNER JOIN Tags ON EventsTags.TagsId = Tags.Id";
             var sqlWhere = $" WHERE Events.Id = {id}";
 
@@ -69,6 +68,7 @@ namespace GildtAPI
                         }
                     );
                 }
+
                 readerTags.Close();
             }
 
@@ -99,7 +99,7 @@ namespace GildtAPI
                             ShortDescription = reader["ShortDescription"].ToString(),
                             LongDescription = reader["LongDescription"].ToString(),
                             Tags = tags.ToArray<Tag>()
-                    }
+                        }
                     );
 
                 }
@@ -160,13 +160,11 @@ namespace GildtAPI
 
             string image = formData["image"];
 
+            string tags = formData["tags"];
 
             // Queries
             var sqlStr =
             $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{title}', '{location}', '{dateTimeStart}', '{dateTimeEnd}', '{shortdescription}', '{longdescription}', '{image}', 'false')";
-
-            //var sqlGet =
-            //$"SELECT COUNT(*) FROM Events WHERE (Name = '{title}')";
 
             //Checks if the input fields are filled in
             if (title == null)
@@ -193,29 +191,32 @@ namespace GildtAPI
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
 
+            
+
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
-            //Checks if the Event is already added
+            //check if tags are filled if so fill the Tags table
+            if (tags != null)
+            {
 
-            //SqlCommand checkEvent = new SqlCommand(sqlGet, conn);
-            //checkEvent.Parameters.AddWithValue("Name", title);
-            //int EventExist = (int)checkEvent.ExecuteScalar();
-            //if (EventExist > 0)
-            //{
-            //    return req.CreateResponse(HttpStatusCode.BadRequest, "There is already an Event added with that name );
-            //}
-            //else
-            //{
-            //    using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            //    {
-            //        cmd.ExecuteNonQuery();
-            //    }
+                string[] tagsArray = tags.Split(',');
 
-            //    // Close the database connection
-            //    DBConnect.Dispose(conn);
-            //    return req.CreateResponse(HttpStatusCode.OK, "Successfully added the event");
-            //}
+                foreach (var item in tagsArray)
+                {
+                    string tag = item;
+
+                    var sqlTagStr =
+                    $"INSERT INTO Tags (Name) VALUES ('{tag}')";
+
+                    using (SqlCommand cmd = new SqlCommand(sqlTagStr, conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+
+                }
+
+            }
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
