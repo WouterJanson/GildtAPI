@@ -39,13 +39,13 @@ namespace GildtAPI
             // get all events
             var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events";
             // get all tags
-            var sqlStrTags = $"SELECT EventsTags.TagsId, EventsTags.Name, EventsTags.EventsId FROM EventsTags";
-            // if ID is specified in the request, add a where clasule to the query
+            var sqlStrTags = $"SELECT EventsTags.TagsId, EventsTags.Name, EventsTags.EventsId FROM EventsTags";           
             var sqlWhere = $" WHERE Events.Id = {id}";
 
             // Checks if the id parameter is filled in
             if (id != null)
             {
+                // if ID is specified in the request, add a where clasule to the query
                 sqlStr = sqlStr + sqlWhere;
             }
 
@@ -256,7 +256,7 @@ namespace GildtAPI
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{id}")] HttpRequestMessage req,
         ILogger log, string id)
         {
-            
+
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string tags = formData["tags"];
             string eventId = id;
@@ -264,38 +264,62 @@ namespace GildtAPI
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
-            //check if tags are filled if so fill the Tags table
-            if (tags != null)
+            // query to check if event even exist by checking the id
+            var sqlStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {id}";
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-
-                string[] tagsArray = tags.Split(',');
-
-                foreach (var item in tagsArray)
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    string tag = item;
-
-                    var sqlTagStr =
-                    $"INSERT INTO EventsTags (Name, EventsId) VALUES ('{tag}', '{eventId}')";
-
-                    using (SqlCommand cmd = new SqlCommand(sqlTagStr, conn))
+                    // check if query has found an event by the given EventId
+                    if (reader.HasRows)
                     {
-                        cmd.ExecuteNonQuery();
+                        reader.Close();
+
+                            //check if tags are filled if so fill the Tags table
+                            if (tags != "")
+                            {
+
+                                string[] tagsArray = tags.Split(',');
+
+                                foreach (var item in tagsArray)
+                                {
+                                    string tag = item;
+
+                                    var sqlTagStr =
+                                    $"INSERT INTO EventsTags (Name, EventsId) VALUES ('{tag}', '{eventId}')";
+
+                                    using (SqlCommand cmd2 = new SqlCommand(sqlTagStr, conn))
+                                    {
+                                        cmd2.ExecuteNonQuery();
+                                    }
+
+                                }
+
+                                // Close the database connection
+                                DBConnect.Dispose(conn);
+                                return req.CreateResponse(HttpStatusCode.OK, "Successfully added tags to the event!");
+
+                            }
+                            else
+                            {
+                                // Close the database connection
+                                DBConnect.Dispose(conn);
+                                return req.CreateResponse(HttpStatusCode.PreconditionFailed, "No tags have been specified!");
+                            }
                     }
-
+                    else
+                    {
+                        // Close the database connection
+                        DBConnect.Dispose(conn);
+                        return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");                        
+                    }
                 }
-          
             }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-            return req.CreateResponse(HttpStatusCode.OK, "Successfully added tags to the event");
-
         }
-
 
         [FunctionName("DeleteTags")]
         public static async Task<IActionResult> DeleteTags(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Delete/{id}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequest req,
         ILogger log, string id)
         {
             var sqlStr = $"DELETE EventsTags WHERE EventsId = '{id}'";
