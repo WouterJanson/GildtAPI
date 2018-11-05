@@ -139,14 +139,13 @@ namespace GildtAPI
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string Title = formData["Title"];
             string Artist = formData["Artist"];
-            DateTime DateTime = DateTime.Parse(formData["DateTime"]);
             string UserId = formData["UserId"];
 
 
             // Queries
             var sqlStr =
                 $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
-                $"VALUES ('{Title}', '{Artist}', '{DateTime}', '{UserId}')";
+                $"VALUES ('{Title}', '{Artist}', '{DateTime.UtcNow}', '{UserId}')";
 
 
 
@@ -165,12 +164,6 @@ namespace GildtAPI
             {
                 missingFields.Add("Artist");
             }
-
-            if (DateTime == null)
-            {
-                missingFields.Add("DateTime Start");
-            }
-
 
             // Returns bad request if one of the input fields are not filled in
             if (missingFields.Any())
@@ -191,7 +184,16 @@ namespace GildtAPI
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                await cmd.ExecuteNonQueryAsync();
+                try
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                catch(Exception e)
+                {
+                    DBConnect.Dispose(conn);
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist!");
+                }
+                
             }
 
             // Close the database connection
