@@ -16,17 +16,17 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using GildtAPI.Model;
 
-namespace GildtAPI
+namespace GildtAPI.Functions
 {
-    public static class SongRequest
+    public static class SongRequests
     {
         [FunctionName("SongRequest")]
-        public static async Task<IActionResult> Get(
+        public static async Task<IActionResult> GetSongRequests(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "SongRequest/{id?}")]
             HttpRequest req,
             ILogger log, string id)
         {
-            List<SongRequests> AllRequests = new List<SongRequests>();
+            List<SongRequest> AllRequests = new List<SongRequest>();
             string qCount = req.Query["count"];
             if (qCount == null)
             {
@@ -66,7 +66,7 @@ namespace GildtAPI
                 {
                     //List<Event> eventsList = new List<Event>();
 
-                    AllRequests.Add(new SongRequests()
+                    AllRequests.Add(new Model.SongRequest()
                     {
                         Id = Convert.ToInt32(reader["RequestId"]),
                         Title = reader["Title"].ToString(),

@@ -13,8 +13,9 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
+using GildtAPI.Model;
 
-namespace GildtAPI
+namespace GildtAPI.Functions
 {
     public static class Rewards
     {

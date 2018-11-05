@@ -14,8 +14,9 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
+using GildtAPI.Model;
 
-namespace Company.Function
+namespace GildtAPI.Functions
 {
     public static class Users
     {
@@ -54,14 +55,14 @@ namespace Company.Function
                 {
                     couponsList.Add(
                         new UsersCoupon() {
-                            couponId = Convert.ToInt32(readerCoupons["CouponId"]),
-                            name = readerCoupons["Name"].ToString(),
+                            CouponId = Convert.ToInt32(readerCoupons["CouponId"]),
+                            Name = readerCoupons["Name"].ToString(),
                             Description = readerCoupons["Description"].ToString(),
-                            startDate = DateTime.Parse(readerCoupons["StartDate"].ToString()),
-                            endDate = DateTime.Parse(readerCoupons["EndDate"].ToString()),
-                            type = Convert.ToInt32(readerCoupons["Type"].ToString()),
-                            totalUsed = Convert.ToInt32(readerCoupons["TotalUsed"]),
-                            image = readerCoupons["Image"].ToString(),
+                            StartDate = DateTime.Parse(readerCoupons["StartDate"].ToString()),
+                            EndDate = DateTime.Parse(readerCoupons["EndDate"].ToString()),
+                            Type = Convert.ToInt32(readerCoupons["Type"].ToString()),
+                            TotalUsed = Convert.ToInt32(readerCoupons["TotalUsed"]),
+                            Image = readerCoupons["Image"].ToString(),
                             UserId = Convert.ToInt32(readerCoupons["UserId"])
                         }
                     );
@@ -84,11 +85,11 @@ namespace Company.Function
                     }
                     users.Add(
                         new User(){
-                            userId = Convert.ToInt32(readerUsers["id"]),
-                            username = readerUsers["Username"].ToString(), 
-                            email = readerUsers["Email"].ToString(), 
-                            password = readerUsers["Password"].ToString(),
-                            coupons = tempList
+                            Id = Convert.ToInt32(readerUsers["id"]),
+                            Username = readerUsers["Username"].ToString(), 
+                            Email = readerUsers["Email"].ToString(), 
+                            Password = readerUsers["Password"].ToString(),
+                            Coupons = tempList
                         }
                     );
 

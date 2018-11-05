@@ -15,7 +15,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
 
-namespace GildtAPI
+namespace GildtAPI.Functions
 {
     public static class Events
     {

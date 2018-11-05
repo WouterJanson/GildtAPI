@@ -15,7 +15,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
 
-namespace Company.Function
+namespace GildtAPI.Functions
 {
     public static class Coupons
     {

@@ -5,7 +5,7 @@ using System.Text;
 namespace GildtAPI.Model
 {
 
-    public class SongRequests
+    public class SongRequest
     {
         public int Id;
         public string Title;

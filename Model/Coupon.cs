@@ -1,12 +1,14 @@
 ﻿using System;
-
-public class Coupon {
-    public int couponId {get; set; }
-    public string name { get; set; }
-    public string Description { get; set; }
-    public DateTime startDate { get; set; }
-    public DateTime endDate { get; set; }
-    public int type { get; set; }
-    public int totalUsed { get; set; }
-    public string image { get; set; }
+namespace GildtAPI.Model
+{
+    public class Coupon {
+        public int Id {get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public int Type { get; set; }
+        public int TotalUsed { get; set; }
+        public string Image { get; set; }
+    }
 }

@@ -1,7 +1,9 @@
-﻿public class Reward
+﻿namespace GildtAPI.Model
 {
-    //TO DO: UserId array?
-    public int Id;
-    public string Name;
-    public string Description;
+    public class Reward
+    {
+        public int Id;
+        public string Name;
+        public string Description;
+    }
 }
