@@ -71,7 +71,7 @@ namespace Company.Function
 
             using (SqlCommand cmdUsers = new SqlCommand(sqlStrUsers, conn))
             {
-                SqlDataReader readerUsers = cmdUsers.ExecuteReader();
+                SqlDataReader readerUsers = await cmdUsers.ExecuteReaderAsync();
                 while(readerUsers.Read())
                 {
                     List<UsersCoupon> tempList = new List<UsersCoupon>();
