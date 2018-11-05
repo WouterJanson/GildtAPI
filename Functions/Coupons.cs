@@ -206,12 +206,13 @@ namespace Company.Function
                         try
                         {
                             await cmd.ExecuteNonQueryAsync();
+
                         }
                         catch
                         {
                             return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured");
                         }
-                        
+                        DBConnect.Dispose(conn);                
                     }
 
                     return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon");
