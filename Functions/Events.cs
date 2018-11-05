@@ -322,14 +322,14 @@ namespace GildtAPI
                         }
 
                     }
-                    
+
                     else
                     {
                         // Close the database connection
                         DBConnect.Dispose(conn);
                         return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");
                     }
-                    
+
                 }
 
                 DBConnect.Dispose(conn);
@@ -368,6 +368,49 @@ namespace GildtAPI
                 return (ActionResult)new BadRequestObjectResult(e);
             }
         }
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        [FunctionName("EditTags")]
+        public static async Task<HttpResponseMessage> EditCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
+            ILogger log, string id)
+        {
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            string name = formData["Name"];
+
+
+
+            string sqlStrUpdate = $"UPDATE Tags SET " +
+                                  $"Name = COALESCE({(name == null ? "NULL" : $"'{name}'")}, Name)" +
+                                  $"Where Id= {id}";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+            {
+                try
+                {
+                    int affectedRows = await cmd.ExecuteNonQueryAsync();
+                    DBConnect.Dispose(conn);
+                    if (affectedRows == 0)
+                    {
+                        return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag with id: {id} does not exist.");
+                    }
+                    return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the Tag"); ;
+                }
+                catch (InvalidCastException e)
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
+                }
+
+            }
+
+
+
+
+        }
+
+
+
 
     }
 }

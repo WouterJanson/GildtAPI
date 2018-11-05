@@ -107,6 +107,7 @@ namespace GildtAPI
 
                 try
                 {
+                    //await = gaat pas verder als taks is afgerond
                     int affectedRows = await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
                     if (affectedRows == 0)
@@ -119,7 +120,7 @@ namespace GildtAPI
                 }
                 catch (Exception e)
                 {
-                    return new BadRequestObjectResult(e);
+                    return new BadRequestObjectResult(e.Message);
                 }
             }
 
@@ -191,7 +192,7 @@ namespace GildtAPI
                 catch(Exception e)
                 {
                     DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist!");
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist!" + e.Message);
                 }
                 
             }
