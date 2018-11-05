@@ -319,8 +319,8 @@ namespace GildtAPI
 
         [FunctionName("AddTags")]
         public static async Task<HttpResponseMessage> AddTags(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
-        ILogger log, string Eventid, string TagId)
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
+            ILogger log, string Eventid, string TagId)
         {
 
             string eventId = Eventid;
@@ -329,7 +329,7 @@ namespace GildtAPI
             // Queries
             var sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
             // query to check if event even exist by checking the id
-            var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";            
+            var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
@@ -343,39 +343,23 @@ namespace GildtAPI
                     {
                         reader.Close();
 
-<<<<<<< HEAD
+                        // insert in to the table Tags
                         using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
                         {
                             await cmd2.ExecuteNonQueryAsync();
                         }
-
                     }
-
-=======
-                            // insert in to the table Tags                                                           
-                            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
-                            {
-                                await cmd2.ExecuteNonQueryAsync();
-                            }
-                    }                   
->>>>>>> b60b33bafaa7a0578a54779bf4a16cf17e389d7c
                     else
                     {
                         // Close the database connection
                         DBConnect.Dispose(conn);
                         return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");
-<<<<<<< HEAD
                     }
-
-=======
-                    }                    
->>>>>>> b60b33bafaa7a0578a54779bf4a16cf17e389d7c
                 }
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
             }
         }
-
 
 
         [FunctionName("DeleteTags")]
