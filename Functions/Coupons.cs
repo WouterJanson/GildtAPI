@@ -24,11 +24,10 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Coupons/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
-            //TODO Single coupon
             List<Coupon> couponsList = new List<Coupon>();
 
-            var sqlStr = $"SELECT * FROM Coupons ";
-            var sqlWhere = $"WHERE Id = '{id}'";
+            var sqlStr = $"SELECT * FROM Coupons";
+            var sqlWhere = $" WHERE Id = '{id}'";
             if(id != null)
             {
                 sqlStr = sqlStr + sqlWhere;
@@ -84,7 +83,7 @@ namespace GildtAPI.Functions
             string image = formData["Image"];
 
             var sqlStr =
-                $"INSERT INTO Coupons (Name, Description, StartDate, EndDate, Type, Image) VALUES ('{name}', '{description}', '{startDate}', '{endDate}', '{type}', '{image}')";
+                $"INSERT INTO Coupons (Name, Description, StartDate, EndDate, Type, TotalUsed, Image) VALUES ('{name}', '{description}', '{startDate}', '{endDate}', '{type}', '0', '{image}')";
             var sqlGet =
                 $"SELECT COUNT(*) FROM Coupons WHERE Name = '{name}'";
 
