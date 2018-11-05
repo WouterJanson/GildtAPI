@@ -22,8 +22,7 @@ namespace GildtAPI.Functions
     {
         [FunctionName("SongRequest")]
         public static async Task<IActionResult> GetSongRequests(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "SongRequest/{id?}")]
-            HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "SongRequest/{id?}")]HttpRequest req,
             ILogger log, string id)
         {
             List<SongRequest> AllRequests = new List<SongRequest>();
@@ -46,8 +45,10 @@ namespace GildtAPI.Functions
                 "SELECT u.RequestId AS RequestID, COUNT(UserId) AS Upvotes FROM SongRequestUserVotes AS u WHERE u.Vote > 0 GROUP BY " +
                 "u.RequestId, u.Vote ) as uv ON sr.Id = uv.RequestID ";
 
-            var sqlWhere = $" WHERE RequestId = {id}";
+            var sqlWhere = $" WHERE sr.Id = {id}";
 
+
+            //controleren op {id} Als het bestaat Add where op query
             if (id != null)
             {
                 sqlAllRequests = sqlAllRequests + sqlWhere;
@@ -58,9 +59,7 @@ namespace GildtAPI.Functions
 
             using (SqlCommand cmd = new SqlCommand(sqlAllRequests, conn))
             {
-                SqlDataReader reader = await
-                    cmd.ExecuteReaderAsync();
-
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
 
                 while (reader.Read())
                 {
@@ -79,7 +78,6 @@ namespace GildtAPI.Functions
                     );
 
                 }
-
             }
 
             DBConnect.Dispose(conn);
