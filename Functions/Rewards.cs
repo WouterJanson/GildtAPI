@@ -18,83 +18,9 @@ namespace GildtAPI
 {
     public static class Rewards
     {
-        #region Get methods
         const int DEFAULTCOUNT = 20;
-
-        [FunctionName(nameof(Rewards) + "-" + nameof(GetAllRewards))]
-        public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Function, "get", Route = nameof(Rewards))] HttpRequest req, ILogger log)
-        {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetAllRewards));
-            string qCount = req.Query["count"];
-            int count = DEFAULTCOUNT;
-            if (qCount != null)
-            {
-                Int32.TryParse(qCount, out count);
-                if (count < 1)
-                {
-                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
-                }
-            }
-            string rewardsJson = JsonConvert.SerializeObject(GetAllRewards());
-            return new OkObjectResult(rewardsJson);
-        }
-
-
-        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
-        public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log, 
-            int userId)
-        {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
-            string qCount = req.Query["count"];
-            int count = DEFAULTCOUNT;
-            if (qCount != null)
-            {
-                if (!Int32.TryParse(qCount, out count) || count < 1)
-                {
-                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
-                }
-            }
-            Reward[] userRewards = GetUserRewards(count, userId);
-
-            if (userRewards.Length == 0)
-            {
-                return (ActionResult)new OkObjectResult("No rewards for this user.");
-            }
-            string rewardsJson = JsonConvert.SerializeObject(userRewards);
-            return (ActionResult)new OkObjectResult(rewardsJson);
-        }
-
-        private static Reward[] GetAllRewards()
-        {
-            //SQL query to get rewards and their names+description for selected user
-            string sqlQuery = 
-                $"SELECT TOP {1000} Rewards.Id, Rewards.Name, Rewards.Description " +
-                "FROM Rewards";
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            List<Reward> rewardsList = new List<Reward>();
-            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
-            {
-
-                SqlDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-
-                    rewardsList.Add(
-                        new Reward()
-                        {
-                            Id = int.Parse(reader["Id"].ToString()),
-                            Name = reader["Name"].ToString(),
-                            Description = reader["Description"].ToString()
-                        }
-                    );
-                }
-            }
-            return rewardsList.ToArray();
-        }
-
-        private static Reward[] GetUserRewards(int count, int userId)
+        
+        private static async Task<Reward[]> GetUserRewards(int count, int userId)
         {
             //SQL query to get rewards and their names+description for selected user
             string sqlQuery = $"SELECT TOP {count} Rewards.Id, Rewards.Name, Rewards.Description " +
@@ -109,7 +35,77 @@ namespace GildtAPI
             using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
             {
 
-                SqlDataReader reader = cmd.ExecuteReader();
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+
+                    rewardsList.Add(
+                        new Reward()
+                        {
+                            Id = int.Parse(reader["Id"].ToString()),
+                            Name = reader["Name"].ToString(),
+                            Description = reader["Description"].ToString()
+                        }
+                    );
+                }
+            }
+            return rewardsList.ToArray();
+        }
+        
+        private static async Task<bool> CreateReward(string name, string description)
+        {
+            // Queries
+            //Query to insert new row into rewards with name and description
+            var sqlStr =
+            "INSERT INTO Rewards " +
+                $"(Name, Description) " +
+            "VALUES " +
+                $"('{name}', '{description}')";
+            //Get query to check if reward with name already exists
+            var sqlGet =
+            "SELECT COUNT(*) FROM Rewards " +
+            $"WHERE (Name = '{name}')";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            //Checks if reward with name already exists
+            SqlCommand checkRewards = new SqlCommand(sqlGet, conn);
+            checkRewards.Parameters.AddWithValue("Name", name);
+            int existingRewards = (int) await checkRewards.ExecuteScalarAsync();
+            if (existingRewards > 0)
+            {
+                // Close the database connection
+                DBConnect.Dispose(conn);
+                return false;
+            }
+            else
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Close the database connection
+                DBConnect.Dispose(conn);
+                return true;
+            }
+        }
+
+        private static async Task<Reward[]> GetAllRewards()
+        {
+            //SQL query to get rewards and their names+description for selected user
+            string sqlQuery = 
+                $"SELECT TOP {1000} Rewards.Id, Rewards.Name, Rewards.Description " +
+                "FROM Rewards";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            List<Reward> rewardsList = new List<Reward>();
+            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
+            {
+
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
                 while (reader.Read())
                 {
 
@@ -126,125 +122,165 @@ namespace GildtAPI
             return rewardsList.ToArray();
         }
 
-        [FunctionName(nameof(Rewards) + "-" + nameof(GetSingleReward))]
-        public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Function, "get", Route = "Rewards/{rewardId}")] HttpRequest req, ILogger log,
-            int rewardId)
+        private static async Task<Reward> GetRewardById(int rewardId)
         {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetSingleReward));
+            //SQL query to get newest reward with name
+            string sqlQuery = "SELECT TOP (1) " +
+                "Id, Name, Description " +
+                "FROM Rewards " +
+               $"WHERE Rewards.Id = {rewardId}";
 
-            string qRewardId = req.Query["rewardId"];
+            SqlConnection conn = DBConnect.GetConnection();
+
+            List<Reward> rewardsList = new List<Reward>();
+            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
+            {
+
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    return
+                        new Reward()
+                        {
+                            Id = int.Parse(reader["Id"].ToString()),
+                            Name = reader["Name"].ToString(),
+                            Description = reader["Description"].ToString()
+                        };
+                }
+            }
+            //
+
+            return rewardsList.ToArray()[0];
+        }
+
+        private static async Task<Reward[]> GetRewardsByName(string rewardName)
+        {
+            //SQL query to get newest reward with name
+            string sqlQuery =
+                $"SELECT TOP ({DEFAULTCOUNT}) [Id],[Name],[Description] " +
+                "FROM [dbo].[Rewards] " +
+               $"WHERE Rewards.Name = '{rewardName}' " +
+                //order by descending id to get newest entry
+                "ORDER BY Rewards.Id DESC";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            List<Reward> rewardsList = new List<Reward>();
+            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
+            {
+
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+
+                    rewardsList.Add(
+                        new Reward()
+                        {
+                            Id = int.Parse(reader["Id"].ToString()),
+                            Name = reader["Name"].ToString(),
+                            Description = reader["Description"].ToString()
+                        }
+                    );
+                }
+            }
+
+            return rewardsList.ToArray();
+        }
+
+
+        #region Functions
+
+        [FunctionName("GetAllRewards")]
+        public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Function, "get", Route = nameof(Rewards))] HttpRequest req, ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetAllRewards));
+            string qCount = req.Query["count"];
+            int count = DEFAULTCOUNT;
+            if (qCount != null)
+            {
+                Int32.TryParse(qCount, out count);
+                if (count < 1)
+                {
+                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
+                }
+            }
+            Reward[] rewards = await GetAllRewards();
+            string rewardsJson = JsonConvert.SerializeObject(rewards);
+            return new OkObjectResult(rewardsJson);
+        }
+
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
+        public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", 
+            Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log, 
+            int userId)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
+            string qCount = req.Query["count"];
+            int count = DEFAULTCOUNT;
+            if (qCount != null)
+            {
+                if (!Int32.TryParse(qCount, out count) || count < 1)
+                {
+                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
+                }
+            }
+            Reward[] userRewards = await GetUserRewards(count, userId);
+
+            if (userRewards.Length == 0)
+            {
+                return (ActionResult)new OkObjectResult("No rewards for this user.");
+            }
+            string rewardsJson = JsonConvert.SerializeObject(userRewards);
+            return (ActionResult)new OkObjectResult(rewardsJson);
+        }
+        
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetSingleReward))]
+        public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Function, "get", 
+            Route = "Rewards/{rewardId}")] HttpRequest req, ILogger log,
+            int rewardId)
+        
+{
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetSingleReward));
+            
             string qRewardName = req.Query["rewardName"];
-            if (qRewardId == null && String.IsNullOrWhiteSpace(qRewardName))
+            if (rewardId == null && String.IsNullOrWhiteSpace(qRewardName))
             {
                 //no valid rewardid or rewardname
-                return new BadRequestObjectResult("Invalid parameters. Add a rewardId or rewardName parameter.");
+                return new BadRequestObjectResult("Missing parameters. Add a rewardId or rewardName parameter.");
             }
 
 
-            if (qRewardId == null && qRewardName != null)
+            if (rewardId == null && qRewardName != null)
             {
                 //No rewardId entered: get reward by name
                 if (!String.IsNullOrWhiteSpace(qRewardName))
                 {
-
-                    //SQL query to get newest reward with name
-                    string sqlQuery =
-                        "SELECT TOP (1) [Id],[Name],[Description] " +
-                        "FROM [dbo].[Rewards] " +
-                       $"WHERE Rewards.Name = '{qRewardName}' " +
-                       //order by descending id to get newest entry
-                        "ORDER BY Rewards.Id DESC";
-
-                    SqlConnection conn = DBConnect.GetConnection();
-
-                    List<Reward> rewardsList = new List<Reward>();
-                    using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
-                    {
-
-                        SqlDataReader reader = cmd.ExecuteReader();
-                        while (reader.Read())
-                        {
-
-                            rewardsList.Add(
-                                new Reward()
-                                {
-                                    Id = int.Parse(reader["Id"].ToString()),
-                                    Name = reader["Name"].ToString(),
-                                    Description = reader["Description"].ToString()
-                                }
-                            );
-                        }
-                    }
                     //
-                    if (rewardsList.Count == 0 || rewardsList.Count > 1)
+                    var rewardsList = await GetRewardsByName(qRewardName);
+                    if (rewardsList.Length == 0 || rewardsList.Length > 1)
                     {
-                        return (ActionResult)new OkObjectResult(
-                            rewardsList.Count == 0 
+                        return new BadRequestObjectResult(
+                            rewardsList.Length == 0
                                 ? "No rewards with this name."
                                 : "Multiple rewards found. Something went wrong in the SQL query.");
                     }
-
-                    string rewardsJson = JsonConvert.SerializeObject(rewardsList.ToArray());
-                    return (ActionResult)new OkObjectResult(rewardsJson);
+                    return new OkObjectResult(rewardsList[0]);
                 }
             }
-            else if (qRewardId != null)
+            else if (rewardId != null)
             {
-                //get reward by ID
-
-                //SQL query to get newest reward with name
-                string sqlQuery =
-                    "SELECT TOP (1) " +
-                        "Id, " +
-                        "Name, " +
-                        "Description " +
-                    "FROM Rewards " +
-                   $"WHERE Rewards.Id = {rewardId}";
-
-                SqlConnection conn = DBConnect.GetConnection();
-
-                List<Reward> rewardsList = new List<Reward>();
-                using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
-                {
-
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-
-                        rewardsList.Add(
-                            new Reward()
-                            {
-                                Id = int.Parse(reader["Id"].ToString()),
-                                Name = reader["Name"].ToString(),
-                                Description = reader["Description"].ToString()
-                            }
-                        );
-                    }
-                }
-                //
-                if (rewardsList.Count == 0 || rewardsList.Count > 1)
-                {
-                    return (ActionResult)new OkObjectResult(
-                        rewardsList.Count == 0
-                            ? "No rewards with this name."
-                            : "Multiple rewards found. Something went wrong in the SQL query.");
-                }
-
-                string rewardsJson = JsonConvert.SerializeObject(rewardsList.ToArray());
-                return (ActionResult)new OkObjectResult(rewardsJson);
+                Reward reward = await GetRewardById((int)rewardId);
+                string rewardsJson = JsonConvert.SerializeObject(reward);
+                return new OkObjectResult(rewardsJson);
             }
-            
+
             return new BadRequestObjectResult("Something weird happened.");
 
         }
 
-        #endregion
-
-        #region Post methods
-
-        [FunctionName( nameof(Rewards) + "-" + nameof(CreateReward))]
-        public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rewards/Create")] HttpRequest req, ILogger log)
-        {
+        [FunctionName(nameof(Rewards) + "-" + nameof(CreateReward))]
+        public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Admin, "post", 
+            Route = "Rewards/Create")] HttpRequest req, ILogger log){
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateReward)}");
             // Read data from input
             //var data = req.Content.ReadAsStringAsync().Result;
@@ -257,56 +293,27 @@ namespace GildtAPI
             bool descMissing = String.IsNullOrEmpty(description);
             if (nameMissing || descMissing)
             {
-                string missingFieldsSummary = "Missing fields: " + 
-                    (nameMissing 
-                    ? (descMissing 
-                        ? "name, description" 
-                        : "name") 
+                string missingFieldsSummary = "Missing fields: " +
+                    (nameMissing
+                    ? (descMissing
+                        ? "name, description"
+                        : "name")
                     : "description");
                 return new BadRequestObjectResult(missingFieldsSummary);
             }
-            // Queries
-            var sqlStr =
-            "INSERT INTO Rewards " +
-                $"(Name, Description) " +
-            "VALUES " +
-                $"('{name}', '{description}')";
-
-            var sqlGet =
-            "SELECT COUNT(*) FROM Rewards " +
-            $"WHERE (Name = '{name}')";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            //Checks if reward with name already exists
-            SqlCommand checkRewards = new SqlCommand(sqlGet, conn);
-            checkRewards.Parameters.AddWithValue("Name", name);
-            int existingRewards = (int)checkRewards.ExecuteScalar();
-            if (existingRewards > 0)
-            {
-                return new BadRequestObjectResult($"Reward named {name} already exists!");
-            }
-            else
-            {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                {
-                    cmd.ExecuteNonQuery();
-                }
-
-                // Close the database connection
-                DBConnect.Dispose(conn);
-                return new OkObjectResult("Successfully created the reward.");
-            }
+            bool success = await CreateReward(name, description);
+            if (success) return new OkObjectResult("Successfully created the reward.");
+            else return new BadRequestObjectResult($"Reward named {name} already exists!");
         }
-
+        
         [FunctionName( nameof(Rewards) + "-" + nameof(DeleteReward))]
-        public static async Task<IActionResult> DeleteReward([HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rewards/Delete")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> DeleteReward([HttpTrigger(AuthorizationLevel.Admin, "delete", 
+            Route = "Rewards/{rewardId}/Delete")] HttpRequest req, ILogger log,
+            int rewardId)
         {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteReward)}");
-
-            string rewardIdString = req.Query["rewardId"];
-            if (String.IsNullOrEmpty(rewardIdString) || !int.TryParse(rewardIdString, out int rewardId))
+            
+            if (rewardId < 1)
             {
                 return new BadRequestObjectResult("Invalid rewardId parameter.");
             }
@@ -321,7 +328,7 @@ namespace GildtAPI
             {
                 try
                 {
-                    int affectedRows = cmd.ExecuteNonQuery();
+                    int affectedRows = await cmd.ExecuteNonQueryAsync();
 
                     if (affectedRows == 0)
                     {
@@ -344,8 +351,53 @@ namespace GildtAPI
             return new OkObjectResult("Successfully deleted the reward.");
         }
 
-        #endregion
+        [FunctionName(nameof(Rewards) + "-" + nameof(EditReward))]
+        public static async Task<IActionResult> EditReward([HttpTrigger(AuthorizationLevel.Admin, "put", 
+            Route = "Rewards/{id}/Edit")] HttpRequest req, ILogger log, 
+            int rewardId)
+        {
+            string name = req.Query["name"];
+            string description = req.Query["description"];
 
+            if (String.IsNullOrWhiteSpace(name) && description == null)
+            {
+                return new BadRequestObjectResult("No name or description entered.");
+            }
+            if (rewardId < 1)
+            {
+                return new BadRequestObjectResult("Invalid id.");
+            }
+            var query = "UPDATE " +
+                            "Rewards " +
+                        "SET " +
+                            "Name = " +
+                                $"COALESCE({(name == null ? "NULL" : $"'{name}'")}, Name), " +
+                            "Rewards.Description = " +
+                                $"COALESCE({(description == null ? "NULL" : $"'{description}'")}, Rewards.Description) " +
+                        "WHERE " +
+                            $"Rewards.Id = {rewardId}";
+
+            SqlConnection conn = DBConnect.GetConnection();
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                try
+                {
+                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                    {
+                        return new BadRequestObjectResult($"No reward with id {rewardId} exists!");
+                    }
+                }
+                catch(Exception e)
+                {
+                    return new BadRequestObjectResult($"Editing reward failed: {e.Message}");
+                }
+            }
+
+            return new OkObjectResult("Successfully edited the reward.");
+        }
+
+        #endregion
 
     }
 }
