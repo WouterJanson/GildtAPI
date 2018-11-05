@@ -28,6 +28,7 @@ namespace GildtAPI
             List<Event> events = new List<Event>();
 
             string qCount = req.Query["count"];
+
             if (qCount == null)
             {
                 qCount = "20";
@@ -39,6 +40,7 @@ namespace GildtAPI
                 $"LEFT JOIN Tags ON EventsTags.TagsId = Tags.Id) as tags ON Events.Id = tags.EventsId";
             var sqlWhere = $" WHERE Events.Id = {id}";
             var sqlOrder = " ORDER BY Events.Id";
+
             // Checks if the id parameter is filled in
             if (id != null)
             {
@@ -55,8 +57,10 @@ namespace GildtAPI
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
                 Event currentEvent = null;
                 List<Tag> currentEventTags = new List<Tag>();
+
                 while (reader.Read())
                 {
                     Event newEvent = new Event()
@@ -72,32 +76,40 @@ namespace GildtAPI
                         ShortDescription = reader["ShortDescription"].ToString(),
                         LongDescription = reader["LongDescription"].ToString()
                     };
+
                     if (currentEvent == null)
                     {
                         //reading first event
                         currentEvent = newEvent;
                     }
+
                     if (currentEvent.Id != newEvent.Id)
                     {
                         //reading next event: save all read tags + save event to list
                         currentEvent.Tags = currentEventTags.ToArray();
                         currentEventTags = new List<Tag>();
+
                         events.Add(currentEvent);
                         currentEvent = newEvent;
                     }
+
                     //read tag
                     string tagIdstr = reader["TagId"].ToString();
+
                     if (String.IsNullOrWhiteSpace(tagIdstr))
                     {
                         //tag is null, don't add
                         continue;
                     }
+
                     int tagId = int.Parse(tagIdstr);
                     string tagName = reader["Tag"].ToString();
+
                     //Add tag to current events tags
                     currentEventTags.Add(new Tag(tagId, tagName));
                     log.LogInformation($"Read tag with id {tagIdstr} eventid {currentEvent.Id}");
                 }
+
                 //add last read eventtags + event to list
                 currentEvent.Tags = currentEventTags.ToArray();
                 events.Add(currentEvent);
