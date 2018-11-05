@@ -19,7 +19,6 @@ namespace GildtAPI.Functions
 {
     public static class Rewards
     {
-        const int DEFAULTCOUNT = 20;
         
         #region Functions
 
@@ -29,7 +28,7 @@ namespace GildtAPI.Functions
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetAllRewards));
             string qCount = req.Query["count"];
-            int count = DEFAULTCOUNT;
+            int count = Constants.DEFAULTCOUNT;
             if (qCount != null)
             {
                 Int32.TryParse(qCount, out count);
@@ -50,7 +49,7 @@ namespace GildtAPI.Functions
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
             string qCount = req.Query["count"];
-            int count = DEFAULTCOUNT;
+            int count = Constants.DEFAULTCOUNT;
             if (qCount != null)
             {
                 if (!Int32.TryParse(qCount, out count) || count < 1)
@@ -332,7 +331,7 @@ namespace GildtAPI.Functions
         {
             //SQL query to get newest reward with name
             string sqlQuery =
-                $"SELECT TOP ({DEFAULTCOUNT}) [Id],[Name],[Description] " +
+                $"SELECT TOP ({Constants.DEFAULTCOUNT}) [Id],[Name],[Description] " +
                 "FROM [dbo].[Rewards] " +
                $"WHERE Rewards.Name = '{rewardName}' " +
                 //order by descending id to get newest entry
