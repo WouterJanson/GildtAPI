@@ -341,7 +341,7 @@ namespace GildtAPI
 
         [FunctionName("DeleteTags")]
         public static async Task<IActionResult> DeleteTags(
-        [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Events/Tags/Delete/{tagId}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequest req,
         ILogger log, string id)
         {
             var sqlStr = $"DELETE Tags WHERE Id = '{id}'";
