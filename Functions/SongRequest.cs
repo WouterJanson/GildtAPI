@@ -107,7 +107,7 @@ namespace GildtAPI
 
                 try
                 {
-                    int affectedRows = cmd.ExecuteNonQuery();
+                    int affectedRows = await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
                     if (affectedRows == 0)
                     {
@@ -191,7 +191,7 @@ namespace GildtAPI
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                cmd.ExecuteNonQuery();
+                await cmd.ExecuteNonQueryAsync();
             }
 
             // Close the database connection

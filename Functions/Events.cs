@@ -53,7 +53,7 @@ namespace GildtAPI
 
             using (SqlCommand cmdTags = new SqlCommand(sqlStrTags, conn))
             {
-                SqlDataReader readerTags = cmdTags.ExecuteReader();
+                SqlDataReader readerTags = await cmdTags.ExecuteReaderAsync();
                 while (readerTags.Read())
                 {
                     tagsEvents.Add(
@@ -77,7 +77,7 @@ namespace GildtAPI
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                SqlDataReader reader = cmd.ExecuteReader();
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
                 while (reader.Read())
                 {
                     List<Tag> tags = new List<Tag>();
@@ -131,7 +131,7 @@ namespace GildtAPI
             {
                 using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                 {
-                    cmd.ExecuteNonQuery();
+                    await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the event");
                 }
@@ -197,7 +197,7 @@ namespace GildtAPI
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                cmd.ExecuteNonQuery();
+                await cmd.ExecuteNonQueryAsync();
             }
 
             // Close the database connection
@@ -242,7 +242,7 @@ namespace GildtAPI
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                cmd.ExecuteNonQuery();
+                await cmd.ExecuteNonQueryAsync();
             }
 
             // Close the database connection
