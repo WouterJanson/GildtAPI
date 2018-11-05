@@ -6,14 +6,12 @@ namespace GildtAPI.Model
 {
     public class Tag
     {
-        //public int Id { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
-        
-    }
-
-    public class TagsEvents
-    {
-        public Tag Tag;
-        public Event Event;
+        public Tag(int id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
     }
 }

@@ -26,7 +26,6 @@ namespace GildtAPI
         {
 
             List<Event> events = new List<Event>();
-            List<TagsEvents> tagsEvents = new List<TagsEvents>();
 
             string qCount = req.Query["count"];
             if (qCount == null)
@@ -34,78 +33,74 @@ namespace GildtAPI
                 qCount = "20";
             }
 
-            log.LogInformation("Test" + id);
-
             // get all events
-            var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription FROM Events";
-            // get all tags
-            var sqlStrTags = $"SELECT EventsTags.TagsId, EventsTags.Name, EventsTags.EventsId FROM EventsTags";           
+            var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
+                $"LEFT JOIN (SELECT EventsTags.EventsId, Tags.Name AS Tag, Tags.Id AS TagId FROM EventsTags " +
+                $"LEFT JOIN Tags ON EventsTags.TagsId = Tags.Id) as tags ON Events.Id = tags.EventsId";
             var sqlWhere = $" WHERE Events.Id = {id}";
-
+            var sqlOrder = " ORDER BY Events.Id";
             // Checks if the id parameter is filled in
             if (id != null)
             {
                 // if ID is specified in the request, add a where clasule to the query
                 sqlStr = sqlStr + sqlWhere;
             }
+            else
+            {
+                sqlStr = sqlStr + sqlOrder;
+            }
 
             SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmdTags = new SqlCommand(sqlStrTags, conn))
-            {
-                SqlDataReader readerTags = await cmdTags.ExecuteReaderAsync();
-                while (readerTags.Read())
-                {
-                    tagsEvents.Add(
-                        new TagsEvents()
-                        {
-                            Tag = new Tag()
-                            {
-                                //Id = Convert.ToInt32(readerTags["TagsId"]),
-                                Name = readerTags["Name"].ToString()
-                            },
-                            Event = new Event()
-                            {
-                                Id = Convert.ToInt32(readerTags["EventsId"])
-                            }
-                        }
-                    );
-                }
-
-                readerTags.Close();
-            }
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                Event currentEvent = null;
+                List<Tag> currentEventTags = new List<Tag>();
                 while (reader.Read())
                 {
-                    List<Tag> tags = new List<Tag>();
-                    foreach (var tagEvent in tagsEvents)
+                    Event newEvent = new Event()
                     {
-                        if (tagEvent.Event.Id == Convert.ToInt32(reader["EventId"]))
-                        {
-                            tags.Add(tagEvent.Tag);
-                        }
+                        //read event
+                        Id = Convert.ToInt32(reader["EventId"]),
+                        Name = reader["Name"].ToString(),
+                        StartDate = DateTime.Parse(reader["StartDate"].ToString()),
+                        EndDate = DateTime.Parse(reader["EndDate"].ToString()),
+                        Image = reader["Image"].ToString(),
+                        Location = reader["location"].ToString(),
+                        IsActive = (bool)reader["IsActive"],
+                        ShortDescription = reader["ShortDescription"].ToString(),
+                        LongDescription = reader["LongDescription"].ToString()
+                    };
+                    if (currentEvent == null)
+                    {
+                        //reading first event
+                        currentEvent = newEvent;
                     }
-
-                    events.Add(
-                        new Event()
-                        {
-                            Id = Convert.ToInt32(reader["EventId"]),
-                            Name = reader["Name"].ToString(),
-                            StartDate = DateTime.Parse(reader["StartDate"].ToString()),
-                            EndDate = DateTime.Parse(reader["EndDate"].ToString()),
-                            Image = reader["Image"].ToString(),
-                            Location = reader["location"].ToString(),
-                            IsActive = (bool)reader["IsActive"],
-                            ShortDescription = reader["ShortDescription"].ToString(),
-                            LongDescription = reader["LongDescription"].ToString(),
-                            Tags = tags.ToArray<Tag>()
-                        }
-                    );
-
+                    if (currentEvent.Id != newEvent.Id)
+                    {
+                        //reading next event: save all read tags + save event to list
+                        currentEvent.Tags = currentEventTags.ToArray();
+                        currentEventTags = new List<Tag>();
+                        events.Add(currentEvent);
+                        currentEvent = newEvent;
+                    }
+                    //read tag
+                    string tagIdstr = reader["TagId"].ToString();
+                    if (String.IsNullOrWhiteSpace(tagIdstr))
+                    {
+                        //tag is null, don't add
+                        continue;
+                    }
+                    int tagId = int.Parse(tagIdstr);
+                    string tagName = reader["Tag"].ToString();
+                    //Add tag to current events tags
+                    currentEventTags.Add(new Tag(tagId, tagName));
+                    log.LogInformation($"Read tag with id {tagIdstr} eventid {currentEvent.Id}");
                 }
+                //add last read eventtags + event to list
+                currentEvent.Tags = currentEventTags.ToArray();
+                events.Add(currentEvent);
                 reader.Close();
             }
 
