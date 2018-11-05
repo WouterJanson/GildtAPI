@@ -66,80 +66,10 @@ namespace Company.Function
                 ? (ActionResult)new OkObjectResult(j)
                 : new NotFoundObjectResult("No Coupons where found");
         }
-        
-        [FunctionName("DeleteCoupons")]
-        public static async Task<IActionResult> DeleteCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Coupons/{id}")] HttpRequest req,
-            ILogger log, string id)
-        {
-            var sqlStrDelete = $"DELETE Coupons WHERE Id = {id}";
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            try
-            {
-                using(SqlCommand cmd = new SqlCommand(sqlStrDelete, conn))
-                {
-                    await cmd.ExecuteNonQueryAsync();
-                    DBConnect.Dispose(conn);
-                    return (ActionResult)new OkObjectResult("Sucessfully deleted the coupon");
-                }
-            }
-            catch(Exception e)
-            {
-                return (ActionResult)new NotFoundObjectResult(e);
-            }
-        }
-
-        [FunctionName("EditCoupon")]
-        public static async Task<HttpResponseMessage> EditCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
-            ILogger log, string id)
-            {
-                NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-                string name = formData["Name"];
-                string description = formData["Description"];
-                string startDate = formData["StartDate"];
-                string endDate = formData["EndDate"];
-                string type = formData["Type"];
-                string image = formData["Image"];
-
-                string sqlStrUpdate = $"UPDATE Users SET " + 
-                    $"Username = COALESCE({(name == null ? "NULL" : $"'{name}'")}, Username), " + 
-                    $"Email = COALESCE({(description == null ? "NULL" : $"'{description}'")}, Email), " + 
-                    $"Password = COALESCE({(startDate == null ? "NULL" : $"'{startDate}'")}, Password), " + 
-                    $"Password = COALESCE({(endDate == null ? "NULL" : $"'{endDate}'")}, Password), " + 
-                    $"Password = COALESCE({(type == null ? "NULL" : $"'{type}'")}, Password), " + 
-                    $"IsAdmin = COALESCE({(image == null ? "NULL" : $"'{image}'")}, IsAdmin) " + 
-                    $"WHERE Id = {id}";
-
-                SqlConnection conn = DBConnect.GetConnection();
-                try
-                {
-                    using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
-                    {
-                        try
-                        {
-                            await cmd.ExecuteNonQueryAsync();
-                        }
-                        catch
-                        {
-                            return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid input type");
-                        }
-                        
-                    }
-
-                    return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon");
-                }
-                catch(InvalidCastException e)
-                {
-                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
-                }
-            }
-    
-        [FunctionName("AddCoupon")]
+       [FunctionName("AddCoupon")]
         public static async Task<HttpResponseMessage> AddCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons/Add")] HttpRequestMessage req,
             ILogger log, string id)
         {
             List<string> missingFields = new List<string>();
@@ -204,16 +134,93 @@ namespace Company.Function
             }
             else
             {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                try
+                {
+                     using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                    {
+                        await cmd.ExecuteNonQueryAsync();
+
+                        // Close the database connection
+                        DBConnect.Dispose(conn);
+                        return req.CreateResponse(HttpStatusCode.OK, "Successfully added the coupon");
+                    }
+                }
+                catch
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured");
+                }
+            }
+        } 
+       
+        [FunctionName("DeleteCoupons")]
+        public static async Task<IActionResult> DeleteCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Coupons/{id}")] HttpRequest req,
+            ILogger log, string id)
+        {
+            var sqlStrDelete = $"DELETE Coupons WHERE Id = {id}";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            try
+            {
+                using(SqlCommand cmd = new SqlCommand(sqlStrDelete, conn))
                 {
                     await cmd.ExecuteNonQueryAsync();
+                    DBConnect.Dispose(conn);
+                    return (ActionResult)new OkObjectResult("Sucessfully deleted the coupon");
                 }
-
-                // Close the database connection
-                DBConnect.Dispose(conn);
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully added the coupon");
+            }
+            catch(Exception e)
+            {
+                return (ActionResult)new NotFoundObjectResult(e);
             }
         }
+
+        [FunctionName("EditCoupon")]
+        public static async Task<HttpResponseMessage> EditCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
+            ILogger log, string id)
+            {
+                NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+                string name = formData["Name"];
+                string description = formData["Description"];
+                string startDate = formData["StartDate"];
+                string endDate = formData["EndDate"];
+                string type = formData["Type"];
+                string image = formData["Image"];
+
+                string sqlStrUpdate = $"UPDATE Coupons SET " + 
+                    $"Name = COALESCE({(name == null ? "NULL" : $"'{name}'")}, Name), " + 
+                    $"Description = COALESCE({(description == null ? "NULL" : $"'{description}'")}, Description), " + 
+                    $"StartDate = COALESCE({(startDate == null ? "NULL" : $"'{startDate}'")}, StartDate), " + 
+                    $"EndDate = COALESCE({(endDate == null ? "NULL" : $"'{endDate}'")}, EndDate), " + 
+                    $"Type = COALESCE({(type == null ? "NULL" : $"'{type}'")}, Type), " + 
+                    $"Image = COALESCE({(image == null ? "NULL" : $"'{image}'")}, Image) " + 
+                    $" WHERE Id = {id}";
+
+                SqlConnection conn = DBConnect.GetConnection();
+                try
+                {
+                    using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+                    {
+                        try
+                        {
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                        catch
+                        {
+                            return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured");
+                        }
+                        
+                    }
+
+                    return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon");
+                }
+                catch(InvalidCastException e)
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
+                }
+            }
 
         [FunctionName("SignupCoupon")]
         public static async Task<IActionResult> SignupCoupon(
@@ -227,7 +234,7 @@ namespace Company.Function
             }
 
             //Query
-            var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES ('{user}', '{id}'";
+            var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES ('{user}', '{id}')";
             var sqlGet =
                 $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = '{id}' AND UserId = '{user}'";
 
