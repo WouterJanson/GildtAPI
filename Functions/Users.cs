@@ -145,10 +145,11 @@ namespace Company.Function
             string username = formData["username"];
             string email = formData["email"];
             string password = formData["password"];
+            string passwordHashed = PasswordHasher.HashPassword(password);
 
             // Queries
             var sqlStr =
-            $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', '{username}', '{email}', '{password}')";
+            $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', '{username}', '{email}', '{passwordHashed}')";
             var sqlGet =
             $"SELECT COUNT(*) FROM Users WHERE (Username = '{username}' OR Email = '{email}')";
 
@@ -172,6 +173,8 @@ namespace Company.Function
                 string missingFieldsSummary = String.Join(", ", missingFields);
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
+
+            return null;
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
@@ -238,5 +241,6 @@ namespace Company.Function
                 return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
             }
         }
+
     }
 }

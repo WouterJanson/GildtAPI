@@ -69,8 +69,8 @@ namespace Company.Function
 
        [FunctionName("AddCoupon")]
         public static async Task<HttpResponseMessage> AddCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons/Add")] HttpRequestMessage req,
-            ILogger log, string id)
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons")] HttpRequestMessage req,
+            ILogger log)
         {
             List<string> missingFields = new List<string>();
 
@@ -86,7 +86,7 @@ namespace Company.Function
             var sqlStr =
                 $"INSERT INTO Coupons (Name, Description, StartDate, EndDate, Type, Image) VALUES ('{name}', '{description}', '{startDate}', '{endDate}', '{type}', '{image}')";
             var sqlGet =
-                $"SELECT COUNT(*) FROM Coupons WHERE Name = {name}";
+                $"SELECT COUNT(*) FROM Coupons WHERE Name = '{name}'";
 
             //Checks if the input fields are filled in
             if (name == null)
@@ -145,7 +145,7 @@ namespace Company.Function
                         return req.CreateResponse(HttpStatusCode.OK, "Successfully added the coupon");
                     }
                 }
-                catch
+                catch(Exception e)
                 {
                     return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured");
                 }
@@ -206,12 +206,13 @@ namespace Company.Function
                         try
                         {
                             await cmd.ExecuteNonQueryAsync();
+
                         }
                         catch
                         {
                             return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured");
                         }
-                        
+                        DBConnect.Dispose(conn);                
                     }
 
                     return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon");

@@ -257,11 +257,11 @@ namespace GildtAPI
             string tag = formData["tag"];
 
             // Queries
-            var sqlStr =
-            $"INSERT INTO Tags (Name) VALUES ('{tag}')";
+            var sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
+            var sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
 
             //Checks if the input fields are filled in
-            if (tag == null)
+            if (tag == "")
             {
                 missingFields.Add("Tag");
             }
@@ -274,6 +274,23 @@ namespace GildtAPI
             {
                 string missingFieldsSummary = String.Join(", ", missingFields);
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
+            }
+
+            // check if tag already exist in the database to avoid dublicate entries
+            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+
+            using (SqlDataReader reader = cmd2.ExecuteReader())
+            {
+                
+                //check if tag already exist in the database
+                if (reader.HasRows)
+                {
+                    // Close the database connection
+                    DBConnect.Dispose(conn);
+                    return req.CreateResponse(HttpStatusCode.ExpectationFailed, "Could not create tag, tag does already exist... this would create a dublicate tag");
+                }
+
+                reader.Close();
             }
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
@@ -298,14 +315,12 @@ namespace GildtAPI
             string tagId = TagId;
 
             // Queries
-            var sqlStr =
-            $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
+            var sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
+            // query to check if event even exist by checking the id
+            var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";            
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
-
-            // query to check if event even exist by checking the id
-            var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";
 
             using (SqlCommand cmd = new SqlCommand(sqlEventStr, conn))
             {
@@ -316,6 +331,7 @@ namespace GildtAPI
                     {
                         reader.Close();
 
+<<<<<<< HEAD
                         using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
                         {
                             await cmd2.ExecuteNonQueryAsync();
@@ -323,15 +339,26 @@ namespace GildtAPI
 
                     }
 
+=======
+                            // insert in to the table Tags                                                           
+                            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
+                            {
+                                await cmd2.ExecuteNonQueryAsync();
+                            }
+                    }                   
+>>>>>>> b60b33bafaa7a0578a54779bf4a16cf17e389d7c
                     else
                     {
                         // Close the database connection
                         DBConnect.Dispose(conn);
                         return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");
+<<<<<<< HEAD
                     }
 
+=======
+                    }                    
+>>>>>>> b60b33bafaa7a0578a54779bf4a16cf17e389d7c
                 }
-
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
             }
