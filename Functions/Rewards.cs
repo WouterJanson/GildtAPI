@@ -23,10 +23,10 @@ namespace GildtAPI
         private static async Task<Reward[]> GetUserRewards(int count, int userId)
         {
             //SQL query to get rewards and their names+description for selected user
-            string sqlQuery = $"SELECT TOP {count} Rewards.Id, Rewards.Name, Rewards.Description " +
-                "FROM UsersRewards" +
-                "INNER JOIN Rewards ON UsersRewards.RewardId = Rewards.Id" +
-                "INNER JOIN Users ON UserId = Users.Id" +
+            string sqlQuery = $"SELECT TOP {count} Rewards.Id, Rewards.Name, Rewards.Description FROM UsersRewards " +
+                $"INNER JOIN Rewards " +
+                $"ON UsersRewards.RewardId = Rewards.Id " +
+                $"INNER JOIN Users ON UserId = Users.Id " +
                 $"WHERE Users.Id = {userId}";
 
             SqlConnection conn = DBConnect.GetConnection();
@@ -191,7 +191,8 @@ namespace GildtAPI
         #region Functions
 
         [FunctionName("GetAllRewards")]
-        public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Function, "get", Route = nameof(Rewards))] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Function, "get", 
+            Route = nameof(Rewards))] HttpRequest req, ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetAllRewards));
             string qCount = req.Query["count"];
