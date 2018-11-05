@@ -27,7 +27,12 @@ namespace Company.Function
             //TODO Single coupon
             List<Coupon> couponsList = new List<Coupon>();
 
-            var sqlStr = $"SELECT * FROM Coupons";
+            var sqlStr = $"SELECT * FROM Coupons ";
+            var sqlWhere = $"WHERE Id = '{id}'";
+            if(id != null)
+            {
+                sqlStr = sqlStr + sqlWhere;
+            }
 
             SqlConnection conn = DBConnect.GetConnection();
 
