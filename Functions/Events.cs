@@ -391,7 +391,8 @@ namespace GildtAPI
                 return (ActionResult)new BadRequestObjectResult(e);
             }
         }
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
         [FunctionName("EditTags")]
         public static async Task<HttpResponseMessage> EditCoupon(
             [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
@@ -399,8 +400,6 @@ namespace GildtAPI
         {
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string name = formData["Name"];
-
-
 
             string sqlStrUpdate = $"UPDATE Tags SET " +
                                   $"Name = COALESCE({(name == null ? "NULL" : $"'{name}'")}, Name)" +
@@ -427,13 +426,7 @@ namespace GildtAPI
 
             }
 
-
-
-
         }
-
-
-
 
     }
 }
