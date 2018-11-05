@@ -330,6 +330,8 @@ namespace GildtAPI
             var sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
             // query to check if event even exist by checking the id
             var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";
+            // querry to validate Tag (does it exist?)
+            var sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id ='{tagId}'";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
@@ -343,11 +345,29 @@ namespace GildtAPI
                     {
                         reader.Close();
 
-                        // insert in to the table Tags
-                        using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
+                        using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
                         {
-                            await cmd2.ExecuteNonQueryAsync();
-                        }
+                            using (SqlDataReader reader2 = cmd2.ExecuteReader())
+                            {
+                                // check if the query has found a tag with the given TagId
+                                if (reader2.HasRows)
+                                {
+                                    reader2.Close();
+
+                                    // insert in to the table Tags
+                                    using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
+                                    {
+                                        await cmd3.ExecuteNonQueryAsync();
+                                    }
+                                }
+                                else
+                                {
+                                    // Close the database connection
+                                    DBConnect.Dispose(conn);
+                                    return req.CreateResponse(HttpStatusCode.NotFound, "tag not found");
+                                }
+                            }
+                        }                                                                          
                     }
                     else
                     {
