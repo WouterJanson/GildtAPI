@@ -174,8 +174,6 @@ namespace Company.Function
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
 
-            return null;
-
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 

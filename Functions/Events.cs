@@ -28,6 +28,7 @@ namespace GildtAPI
             List<Event> events = new List<Event>();
 
             string qCount = req.Query["count"];
+
             if (qCount == null)
             {
                 qCount = "20";
@@ -39,6 +40,7 @@ namespace GildtAPI
                 $"LEFT JOIN Tags ON EventsTags.TagsId = Tags.Id) as tags ON Events.Id = tags.EventsId";
             var sqlWhere = $" WHERE Events.Id = {id}";
             var sqlOrder = " ORDER BY Events.Id";
+
             // Checks if the id parameter is filled in
             if (id != null)
             {
@@ -55,8 +57,10 @@ namespace GildtAPI
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
                 Event currentEvent = null;
                 List<Tag> currentEventTags = new List<Tag>();
+
                 while (reader.Read())
                 {
                     Event newEvent = new Event()
@@ -72,32 +76,40 @@ namespace GildtAPI
                         ShortDescription = reader["ShortDescription"].ToString(),
                         LongDescription = reader["LongDescription"].ToString()
                     };
+
                     if (currentEvent == null)
                     {
                         //reading first event
                         currentEvent = newEvent;
                     }
+
                     if (currentEvent.Id != newEvent.Id)
                     {
                         //reading next event: save all read tags + save event to list
                         currentEvent.Tags = currentEventTags.ToArray();
                         currentEventTags = new List<Tag>();
+
                         events.Add(currentEvent);
                         currentEvent = newEvent;
                     }
+
                     //read tag
                     string tagIdstr = reader["TagId"].ToString();
+
                     if (String.IsNullOrWhiteSpace(tagIdstr))
                     {
                         //tag is null, don't add
                         continue;
                     }
+
                     int tagId = int.Parse(tagIdstr);
                     string tagName = reader["Tag"].ToString();
+
                     //Add tag to current events tags
                     currentEventTags.Add(new Tag(tagId, tagName));
                     log.LogInformation($"Read tag with id {tagIdstr} eventid {currentEvent.Id}");
                 }
+
                 //add last read eventtags + event to list
                 currentEvent.Tags = currentEventTags.ToArray();
                 events.Add(currentEvent);
@@ -307,8 +319,8 @@ namespace GildtAPI
 
         [FunctionName("AddTags")]
         public static async Task<HttpResponseMessage> AddTags(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
-        ILogger log, string Eventid, string TagId)
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
+            ILogger log, string Eventid, string TagId)
         {
 
             string eventId = Eventid;
@@ -317,7 +329,9 @@ namespace GildtAPI
             // Queries
             var sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
             // query to check if event even exist by checking the id
-            var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";            
+            var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";
+            // querry to validate Tag (does it exist?)
+            var sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id ='{tagId}'";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
@@ -331,24 +345,41 @@ namespace GildtAPI
                     {
                         reader.Close();
 
-                            // insert in to the table Tags                                                           
-                            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
+                        using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+                        {
+                            using (SqlDataReader reader2 = cmd2.ExecuteReader())
                             {
-                                await cmd2.ExecuteNonQueryAsync();
+                                // check if the query has found a tag with the given TagId
+                                if (reader2.HasRows)
+                                {
+                                    reader2.Close();
+
+                                    // insert in to the table EventsTags
+                                    using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
+                                    {
+                                        await cmd3.ExecuteNonQueryAsync();
+                                    }
+                                }
+                                else
+                                {
+                                    // Close the database connection
+                                    DBConnect.Dispose(conn);
+                                    return req.CreateResponse(HttpStatusCode.NotFound, "tag not found");
+                                }
                             }
-                    }                   
+                        }                                                                          
+                    }
                     else
                     {
                         // Close the database connection
                         DBConnect.Dispose(conn);
                         return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");
-                    }                    
+                    }
                 }
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
             }
         }
-
 
 
         [FunctionName("DeleteTags")]
@@ -379,6 +410,42 @@ namespace GildtAPI
             {
                 return (ActionResult)new BadRequestObjectResult(e);
             }
+        }
+
+
+        [FunctionName("EditTags")]
+        public static async Task<HttpResponseMessage> EditCoupon(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
+            ILogger log, string id)
+        {
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            string name = formData["Name"];
+
+            string sqlStrUpdate = $"UPDATE Tags SET " +
+                                  $"Name = COALESCE({(name == null ? "NULL" : $"'{name}'")}, Name)" +
+                                  $"Where Id= {id}";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+            {
+                try
+                {
+                    int affectedRows = await cmd.ExecuteNonQueryAsync();
+                    DBConnect.Dispose(conn);
+                    if (affectedRows == 0)
+                    {
+                        return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag with id: {id} does not exist.");
+                    }
+                    return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the Tag"); ;
+                }
+                catch (InvalidCastException e)
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
+                }
+
+            }
+
         }
 
     }
