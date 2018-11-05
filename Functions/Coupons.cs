@@ -14,6 +14,7 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
+using GildtAPI.Model;
 
 namespace GildtAPI.Functions
 {
@@ -43,14 +44,14 @@ namespace GildtAPI.Functions
                 {
                     couponsList.Add(
                         new Coupon() {
-                            couponId = Convert.ToInt32(reader["Id"]),
-                            name = reader["Name"].ToString(),
+                            Id = Convert.ToInt32(reader["Id"]),
+                            Name = reader["Name"].ToString(),
                             Description = reader["Description"].ToString(),
-                            startDate = DateTime.Parse(reader["StartDate"].ToString()),
-                            endDate = DateTime.Parse(reader["EndDate"].ToString()),
-                            type = Convert.ToInt32(reader["Type"].ToString()),
-                            totalUsed = Convert.ToInt32(reader["TotalUsed"]),
-                            image = reader["Image"].ToString()
+                            StartDate = DateTime.Parse(reader["StartDate"].ToString()),
+                            EndDate = DateTime.Parse(reader["EndDate"].ToString()),
+                            Type = Convert.ToInt32(reader["Type"].ToString()),
+                            TotalUsed = Convert.ToInt32(reader["TotalUsed"]),
+                            Image = reader["Image"].ToString()
                         }
                     );
                 }
