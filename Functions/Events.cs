@@ -354,7 +354,7 @@ namespace GildtAPI
                                 {
                                     reader2.Close();
 
-                                    // insert in to the table Tags
+                                    // insert in to the table EventsTags
                                     using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
                                     {
                                         await cmd3.ExecuteNonQueryAsync();
