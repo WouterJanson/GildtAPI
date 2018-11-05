@@ -246,6 +246,48 @@ namespace GildtAPI
         }
 
 
+        [FunctionName("CreateTag")]
+        public static async Task<HttpResponseMessage> CreateTag(
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Create")] HttpRequestMessage req,
+        ILogger log)
+        {
+            List<string> missingFields = new List<string>();
+
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            string tag = formData["tag"];
+
+            // Queries
+            var sqlStr =
+            $"INSERT INTO Tags (Name) VALUES ('{tag}')";
+
+            //Checks if the input fields are filled in
+            if (tag == null)
+            {
+                missingFields.Add("Event Name");
+            }
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            // Returns bad request if one of the input fields are not filled in
+            if (missingFields.Any())
+            {
+                string missingFieldsSummary = String.Join(", ", missingFields);
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
+            }
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+            return req.CreateResponse(HttpStatusCode.OK, "Successfully created tag");
+
+        }
+
+
         [FunctionName("AddTags")]
         public static async Task<HttpResponseMessage> AddTags(
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{id}")] HttpRequestMessage req,
