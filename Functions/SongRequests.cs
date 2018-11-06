@@ -72,8 +72,7 @@ namespace GildtAPI.Functions
 
                 while (reader.Read())
                 {
-                    //List<Event> eventsList = new List<Event>();
-
+                    
                     AllRequests.Add(new Model.SongRequest()
                     {
                         Id = Convert.ToInt32(reader["RequestId"]),
@@ -114,20 +113,22 @@ namespace GildtAPI.Functions
 
                 try
                 {
-                    //await = gaat pas verder als taks is afgerond
+                 
                     int affectedRows = await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
+                    // controleren of er rows zijn aangepast in de database zo niet return 404
                     if (affectedRows == 0)
                     {
                         return new NotFoundObjectResult(
                             $"Deleting Songrequest failed: reward with id {id} does not exist!");
                     }
-
+                    //rows aangepast return 200
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the Songrequest");
                 }
                 catch (Exception e)
                 {
-                    return new BadRequestObjectResult("invalid id"+e.Message);
+                    //return 400 als er een invalid object is > "jjjj"
+                    return new BadRequestObjectResult("invalid id "+  e.Message);
                 }
             }
 
@@ -150,7 +151,7 @@ namespace GildtAPI.Functions
             string UserId = formData["UserId"];
 
 
-            // Queries
+            // Queries vul database met opgegeven input
             var sqlStr =
                 $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
                 $"VALUES ('{Title}', '{Artist}', '{DateTime.UtcNow}', '{UserId}')";
@@ -179,7 +180,7 @@ namespace GildtAPI.Functions
                 string missingFieldsSummary = String.Join(", ", missingFields);
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
-            //controleren of userId niet kleinder is als 0 
+            //controleren of userId niet kleinder is als 0 of niet numeric zijn
             if (!int.TryParse(UserId, out int userId) || userId < 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"UserId is not a valid number.");
@@ -198,14 +199,18 @@ namespace GildtAPI.Functions
                 }
                 catch(Exception e)
                 {
+                    //bestaat gebruiker niet return 400
                     DBConnect.Dispose(conn);
                     return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist!" + e.Message);
                 }
                 
             }
 
+
+
             // Close the database connection
             DBConnect.Dispose(conn);
+            //bestaat gebruiker wel return 200
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added the song request");
 
 

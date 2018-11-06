@@ -1,0 +1,32 @@
+﻿test_name: Get Songrequest from the database
+
+
+stages:
+  - name:  Songrequest on id
+    request:
+      url: http://localhost:7071/api/SongRequest/1
+      method: GET
+    response:
+      status_code: 200
+      body: [{
+          Id: 1,
+          Title: "Venom",
+          Artist: "Eminem",
+          DateTime: "2018-10-24T00:00:00",
+          UserId: 1,
+          Upvotes: 2,
+          Downvotes: 2
+        }]
+  - name: No songs were found
+    request:
+      url: http://localhost:7071/api/SongRequest/111111
+      method: GET
+    response:
+      status_code: 404
+
+  - name: Invalid input
+    request:
+      url: http://localhost:7071/api/SongRequest/no
+      method: GET
+    response:
+      status_code: 400

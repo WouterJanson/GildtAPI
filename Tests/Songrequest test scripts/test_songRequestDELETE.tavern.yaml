@@ -1,0 +1,23 @@
+﻿test_name: Delete SongRequest
+
+stages:
+  - name: Delete Songrequest
+    request:
+      url: http://localhost:7071/api/SongRequest/28
+      method: DELETE
+    response:
+      status_code: 200
+
+  - name: Delete not existing SongRequest
+    request:
+      url: http://localhost:7071/api/SongRequest/1111
+      method: DELETE
+    response:
+      status_code: 404
+  
+  - name: Invalid input
+    request:
+      url: http://localhost:7071/api/SongRequest/jjj
+      method: DELETE
+    response:
+      status_code: 400
