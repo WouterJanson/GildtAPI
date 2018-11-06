@@ -1,0 +1,40 @@
+test_name: AttendanceVerifications
+
+stages:
+  - name: Get verifications for event
+    request:
+      url: http://localhost:7071/api/Attendance/1
+      method: GET
+    response:
+      status_code: 200
+      body: [{
+        UserId: 1,
+        EventId: 1,
+        UserName: "murat"
+        },
+        {
+        UserId: 2,
+        EventId: 1,
+        UserName: "salih"}]
+  
+  - name: Try to add existing verifications
+    request: 
+      url: http://localhost/7071/api/Attendance/1/Verify/1
+      method: POST
+    response:
+      status_code: 400
+	  body: Verification already exists for user 1 and event 1
+
+  - name: Delete verification
+    request: 
+      url: http://localhost/7071/api/Attendance/1/Delete/1
+      method: DELETE
+    response:
+      status_code: 200
+
+  - name: Add verification
+    request: 
+      url: http://localhost/7071/api/Attendance/1/Verify/1
+      method: POST
+    response:
+      status_code: 400

@@ -1,0 +1,46 @@
+test_name: Get a reward
+
+stages:
+  - name: Get reward by id
+    request:
+      url: http://localhost:7071/api/Rewards/?rewardId=8
+      method: GET
+    response:
+      status_code: 200
+      body: {
+          Id: 8,
+          Name: "Test",
+          Description: "Test",
+       }
+  
+  - name: Out of range rewardId
+    request:
+      url: http://localhost:7071/api/Rewards/8272626278
+      method: GET
+    response:
+      status_code: 404
+
+  - name: Get reward by name
+    request:
+      url: http://localhost:7071/api/Rewards/?rewardName=Test
+      method: GET
+    response:
+      status_code: 200
+      body: {
+          id: 8,
+          name: "Test",
+          description: "Test",
+        }
+
+  - name: non-existing reward name
+    request:
+      url: http://localhost:7071/api/Rewards/?rewardName=asdfnasiodfpaojspdof
+      method: GET
+    response:
+      status_code: 404
+  - name: create reward with existing name
+    request:
+      url: http://localhost:7071/api/Rewards/Create/?rewardName=Test&description=Test
+      method: POST
+    response:
+      status_code: 400
