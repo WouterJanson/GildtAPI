@@ -466,27 +466,33 @@ namespace GildtAPI.Functions
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string name = formData["Name"];
 
+            //query om te updaten
             string sqlStrUpdate = $"UPDATE Tags SET " +
                                   $"Name = COALESCE({(name == null ? "NULL" : $"'{name}'")}, Name)" +
                                   $"Where Id= {id}";
-
+            //db connectie
             SqlConnection conn = DBConnect.GetConnection();
 
             using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
             {
                 try
                 {
+                    //krijgt pas waarde als query is voldaan
                     int affectedRows = await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
+
+                    //controleren of er rows in de DB zijn aangepast return 400
                     if (affectedRows == 0)
                     {
                         return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag with id: {id} does not exist.");
                     }
+                    //waardes in DB aangepast return 200
                     return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the Tag"); ;
                 }
                 catch (InvalidCastException e)
                 {
-                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, e);
+                    //object niet gevonden return 404
+                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message);
                 }
 
             }
