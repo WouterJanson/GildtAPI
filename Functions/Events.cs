@@ -14,6 +14,7 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace GildtAPI.Functions
 {
@@ -34,6 +35,16 @@ namespace GildtAPI.Functions
                 qCount = "20";
             }
 
+            // error handling for if input is valid
+            if (id != null)
+            {
+                //check if id is numeric, if it is a number it will give back true if not false
+                if (Regex.IsMatch(id, @"^\d+$") == false)
+                {
+                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric");
+                }
+            }
+            
             // get all events
             var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
                 $"LEFT JOIN (SELECT EventsTags.EventsId, Tags.Name AS Tag, Tags.Id AS TagId FROM EventsTags " +
@@ -41,19 +52,33 @@ namespace GildtAPI.Functions
             var sqlWhere = $" WHERE Events.Id = {id}";
             var sqlOrder = " ORDER BY Events.Id";
 
+            SqlConnection conn = DBConnect.GetConnection();
+
             // Checks if the id parameter is filled in
             if (id != null)
             {
                 // if ID is specified in the request, add a where clasule to the query
                 sqlStr = sqlStr + sqlWhere;
+
+                    // check if event exist if not throw a status 404 event not found
+                    using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                    {
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
+                        if (reader.HasRows == false)
+                        {
+                            return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
+                        }
+
+                        reader.Close();
+                    }
             }
+
             else
             {
                 sqlStr = sqlStr + sqlOrder;
             }
-
-            SqlConnection conn = DBConnect.GetConnection();
-
+            
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -130,23 +155,23 @@ namespace GildtAPI.Functions
            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Events/Delete/{id}")] HttpRequest req,
            ILogger log, string id)
         {
+            //queries
             var sqlStr = $"DELETE Events WHERE Id = '{id}'";
 
             SqlConnection conn = DBConnect.GetConnection();
+           
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {               
+                int rowsaffect = await cmd.ExecuteNonQueryAsync();
 
-            try
-            {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                if (rowsaffect > 0)
                 {
-                    await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the event");
                 }
-            }
-            catch (InvalidCastException e)
-            {
-                return (ActionResult)new BadRequestObjectResult(e);
-            }
+
+                return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
+            }              
         }
 
         [FunctionName("AddEvent")]
@@ -162,8 +187,8 @@ namespace GildtAPI.Functions
             string title = formData["title"];
             string location = formData["location"];
 
-            DateTime dateTimeStart = DateTime.Parse(formData["dateTimeStart"]);
-            DateTime dateTimeEnd = DateTime.Parse(formData["dateTimeEnd"]);
+            string dateTimeStart = (formData["dateTimeStart"]);
+            string dateTimeEnd = (formData["dateTimeEnd"]);
 
             string shortdescription = formData["shortdescription"];
             string longdescription = formData["longdescription"];
@@ -173,6 +198,8 @@ namespace GildtAPI.Functions
             // Queries
             var sqlStr =
             $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{title}', '{location}', '{dateTimeStart}', '{dateTimeEnd}', '{shortdescription}', '{longdescription}', '{image}', 'false')";
+
+            var sqlCheckEventStr = $"SELECT id, Name, Location, StartDate, EndDate FROM Events WHERE name = '{title}' AND StartDate = '{dateTimeStart}' AND EndDate = '{dateTimeEnd}'";
 
             //Checks if the input fields are filled in
             if (title == null)
@@ -192,7 +219,7 @@ namespace GildtAPI.Functions
                 missingFields.Add("DateTime End");
             }
 
-            // Returns bad request if one of the input fields are not filled in
+            // Returns bad request if one of the input fields are not filled in, gives back a status 400
             if (missingFields.Any())
             {
                 string missingFieldsSummary = String.Join(", ", missingFields);
@@ -202,6 +229,18 @@ namespace GildtAPI.Functions
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
+            using (SqlCommand cmd2 = new SqlCommand(sqlCheckEventStr, conn))
+            {
+                SqlDataReader reader = await cmd2.ExecuteReaderAsync();
+                // check if event already exist, check if name+startDate+EndDate combination already exist in the database, if it already exist give it a status 400
+                if (reader.HasRows == true)
+                {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Event already exist");
+                }
+
+                reader.Close();
+            }
+
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 await cmd.ExecuteNonQueryAsync();
@@ -209,6 +248,7 @@ namespace GildtAPI.Functions
 
             // Close the database connection
             DBConnect.Dispose(conn);
+            // if everything is fine give back a status 200
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added the event");
         }
 
@@ -322,7 +362,6 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
-
             string eventId = Eventid;
             string tagId = TagId;
 
@@ -336,49 +375,47 @@ namespace GildtAPI.Functions
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
+            //check if given event exist
             using (SqlCommand cmd = new SqlCommand(sqlEventStr, conn))
             {
                 using (SqlDataReader reader = cmd.ExecuteReader())
                 {
                     // check if query has found an event by the given EventId
-                    if (reader.HasRows)
+                    if (reader.HasRows == false)
                     {
                         reader.Close();
-
-                        using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
-                        {
-                            using (SqlDataReader reader2 = cmd2.ExecuteReader())
-                            {
-                                // check if the query has found a tag with the given TagId
-                                if (reader2.HasRows)
-                                {
-                                    reader2.Close();
-
-                                    // insert in to the table EventsTags
-                                    using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
-                                    {
-                                        await cmd3.ExecuteNonQueryAsync();
-                                    }
-                                }
-                                else
-                                {
-                                    // Close the database connection
-                                    DBConnect.Dispose(conn);
-                                    return req.CreateResponse(HttpStatusCode.NotFound, "tag not found");
-                                }
-                            }
-                        }                                                                          
-                    }
-                    else
-                    {
                         // Close the database connection
                         DBConnect.Dispose(conn);
                         return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");
+                    }                    
+                }               
+            }
+
+            //check if given tag exist
+            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+            {
+                using (SqlDataReader reader2 = cmd2.ExecuteReader())
+                {
+                    // check if the query has found a tag with the given TagId
+                    if (reader2.HasRows == false)
+                    {
+                        reader2.Close();
+                        // Close the database connection
+                        DBConnect.Dispose(conn);
+                        return req.CreateResponse(HttpStatusCode.NotFound, "tag not found");                        
                     }
                 }
+            }
+
+            //execute operation
+            using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
+            {
+                // insert in to the table EventsTags
+                await cmd3.ExecuteNonQueryAsync();
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
-            }
+            }    
+            
         }
 
 

@@ -32,7 +32,15 @@ namespace GildtAPI.Functions
                 qCount = "20";
             }
 
-
+            //controleren of het een int is en niet een invalid request
+            try
+            {
+                int tryconv = Convert.ToInt32(id);
+            }
+            catch
+            {
+                return new BadRequestObjectResult("Invalid input");
+            }
 
             var sqlAllRequests =
                 $"SELECT TOP {qCount} sr.Id AS RequestId,sr.DateTime ,sr.UserId, sr.Title, sr.Artist," +
@@ -47,6 +55,7 @@ namespace GildtAPI.Functions
 
             var sqlWhere = $" WHERE sr.Id = {id}";
 
+       
 
             //controleren op {id} Als het bestaat Add where op query
             if (id != null)
@@ -83,9 +92,9 @@ namespace GildtAPI.Functions
             DBConnect.Dispose(conn);
             string j = JsonConvert.SerializeObject(AllRequests);
 
-            return AllRequests != null
+            return AllRequests.Count > 0
                 ? (ActionResult)new OkObjectResult(j)
-                : new BadRequestObjectResult("No songs were found");
+                : new NotFoundObjectResult("No songs were found");
         }
 
         [FunctionName("DeleteSongRequest")]
