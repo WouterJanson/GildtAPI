@@ -30,3 +30,49 @@ stages:
       method: GET
     response:
       status_code: 400
+
+test_name: Delete SongRequest
+
+stages:
+  - name: Delete Songrequest
+    request:
+      url: http://localhost:7071/api/SongRequest/28
+      method: DELETE
+    response:
+      status_code: 200
+
+  - name: Delete not existing SongRequest
+    request:
+      url: http://localhost:7071/api/SongRequest/1111
+      method: DELETE
+    response:
+      status_code: 404
+  
+  - name: Invalid input
+    request:
+      url: http://localhost:7071/api/SongRequest/jjj
+      method: DELETE
+    response:
+      status_code: 400
+
+stages:
+  - name: Create SongRequest
+    request:
+      url: http://localhost:7071/api/SongRequest/Add
+      method: POST
+      data:
+        Title: Test,
+        UserId: 1
+        Artist: "Test"
+    response:
+      status_code: 200
+
+  - name: Not all input field are filled in
+    request:
+      url: http://localhost:7071/api/SongRequest/Add
+      method: POST
+      data:
+        Title: Test,
+        UserId: 1
+    response:
+      status_code: 400

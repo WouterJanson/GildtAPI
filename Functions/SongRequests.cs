@@ -32,15 +32,15 @@ namespace GildtAPI.Functions
                 qCount = "20";
             }
 
-            //controleren of het een int is en niet een invalid request
-            try
-            {
-                int tryconv = Convert.ToInt32(id);
-            }
-            catch
+     
+
+            //controleren of userId niet kleinder is als 0 en op input
+            if (!int.TryParse(id, out int Id) || Id < 0)
             {
                 return new BadRequestObjectResult("Invalid input");
             }
+
+
 
             var sqlAllRequests =
                 $"SELECT TOP {qCount} sr.Id AS RequestId,sr.DateTime ,sr.UserId, sr.Title, sr.Artist," +
@@ -119,7 +119,7 @@ namespace GildtAPI.Functions
                     DBConnect.Dispose(conn);
                     if (affectedRows == 0)
                     {
-                        return new BadRequestObjectResult(
+                        return new NotFoundObjectResult(
                             $"Deleting Songrequest failed: reward with id {id} does not exist!");
                     }
 
@@ -127,7 +127,7 @@ namespace GildtAPI.Functions
                 }
                 catch (Exception e)
                 {
-                    return new BadRequestObjectResult(e.Message);
+                    return new BadRequestObjectResult("invalid id"+e.Message);
                 }
             }
 
@@ -179,7 +179,7 @@ namespace GildtAPI.Functions
                 string missingFieldsSummary = String.Join(", ", missingFields);
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
-            //controleren of userId niet kleinder als 0 is ivm auto increment
+            //controleren of userId niet kleinder is als 0 
             if (!int.TryParse(UserId, out int userId) || userId < 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"UserId is not a valid number.");
