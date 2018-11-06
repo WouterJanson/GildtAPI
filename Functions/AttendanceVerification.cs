@@ -121,7 +121,7 @@ namespace GildtAPI.Functions
             }
         }
 
-        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(CheckVerifications))]
+/*        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(CheckVerifications))]
         public static async Task<IActionResult> CheckVerifications([HttpTrigger(AuthorizationLevel.Function, "get",
             Route = "Attendance/{eventId?}")] HttpRequest req, ILogger log,
             int? eventId)
@@ -184,7 +184,7 @@ namespace GildtAPI.Functions
             string jAttendance = JsonConvert.SerializeObject(attendanceList.ToArray());
             return new OkObjectResult(jAttendance);
         }
-
+        */
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(DeleteVerification))]
         public static async Task<IActionResult> DeleteVerification([HttpTrigger(AuthorizationLevel.Function, "delete",
             Route = "Attendance/{eventId}/Delete/{userId}")] HttpRequest req, ILogger log,
