@@ -1,4 +1,4 @@
-test_name: Get a event from the database //WORKS
+test_name: Get a event from the database 
 
 stages:
   - name: Make sure we have the right event
@@ -41,18 +41,34 @@ stages:
       url: http://localhost:7071/api/Events/Add
       method: POST
       data:
-        title: TavernTest
+        title: Tavern Test
         location: TavernLoc
-        dateTimeStart: '2007-01-28 20:10:02'
-        dateTimeEnd: '2007-07-28 20:12:02'
-        shortdescription: 'TavernShrtDescr'
-        longdescription: 'TavernLongDescr'
+        dateTimeStart: 2007-01-28 20:10:02
+        dateTimeEnd: 2007-07-28 20:12:02
+        shortdescription: TavernShrtDescr
+        longdescription: TavernLongDescr
         image: /tavernURL
 
     response:
       status_code: 200
+      
 
-  - name: Not all input field are filled in // WORKS
+  - name: Create already existing Event
+    request:
+      url: http://localhost:7071/api/Events/Add
+      method: POST
+      data:
+        title: Tavern Test
+        location: TavernLoc
+        dateTimeStart: 2007-01-28 20:10:02
+        dateTimeEnd: 2007-07-28 20:12:02
+        shortdescription: TavernShrtDescr
+        longdescription: TavernLongDescr
+        image: /tavernURL
+    response:
+      status_code: 400
+
+  - name: Not all input field are filled in 
     request:
       url: http://localhost:7071/api/Events/Add
       method: POST
