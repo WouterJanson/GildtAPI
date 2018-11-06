@@ -14,6 +14,7 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace GildtAPI.Functions
 {
@@ -34,6 +35,16 @@ namespace GildtAPI.Functions
                 qCount = "20";
             }
 
+            // error handling for if input is valid
+            if (id != null)
+            {
+                //check if id is numeric, if it is a number it will give back true if not false
+                if (Regex.IsMatch(id, @"^\d+$") == false)
+                {
+                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric");
+                }
+            }
+            
             // get all events
             var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
                 $"LEFT JOIN (SELECT EventsTags.EventsId, Tags.Name AS Tag, Tags.Id AS TagId FROM EventsTags " +
@@ -41,19 +52,33 @@ namespace GildtAPI.Functions
             var sqlWhere = $" WHERE Events.Id = {id}";
             var sqlOrder = " ORDER BY Events.Id";
 
+            SqlConnection conn = DBConnect.GetConnection();
+
             // Checks if the id parameter is filled in
             if (id != null)
             {
                 // if ID is specified in the request, add a where clasule to the query
                 sqlStr = sqlStr + sqlWhere;
+
+                    // check if event exist if not throw a status 404 event not found
+                    using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                    {
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
+                        if (reader.HasRows == false)
+                        {
+                            return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
+                        }
+
+                        reader.Close();
+                    }
             }
+
             else
             {
                 sqlStr = sqlStr + sqlOrder;
             }
-
-            SqlConnection conn = DBConnect.GetConnection();
-
+            
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -162,8 +187,8 @@ namespace GildtAPI.Functions
             string title = formData["title"];
             string location = formData["location"];
 
-            DateTime dateTimeStart = DateTime.Parse(formData["dateTimeStart"]);
-            DateTime dateTimeEnd = DateTime.Parse(formData["dateTimeEnd"]);
+            string dateTimeStart = (formData["dateTimeStart"]);
+            string dateTimeEnd = (formData["dateTimeEnd"]);
 
             string shortdescription = formData["shortdescription"];
             string longdescription = formData["longdescription"];
@@ -173,6 +198,8 @@ namespace GildtAPI.Functions
             // Queries
             var sqlStr =
             $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{title}', '{location}', '{dateTimeStart}', '{dateTimeEnd}', '{shortdescription}', '{longdescription}', '{image}', 'false')";
+
+            var sqlCheckEventStr = $"SELECT id, Name, Location, StartDate, EndDate FROM Events WHERE name = '{title}' AND StartDate = '{dateTimeStart}' AND EndDate = '{dateTimeEnd}'";
 
             //Checks if the input fields are filled in
             if (title == null)
@@ -201,6 +228,18 @@ namespace GildtAPI.Functions
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd2 = new SqlCommand(sqlCheckEventStr, conn))
+            {
+                SqlDataReader reader = await cmd2.ExecuteReaderAsync();
+
+                if (reader.HasRows == true)
+                {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Event already exist");
+                }
+
+                reader.Close();
+            }
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
