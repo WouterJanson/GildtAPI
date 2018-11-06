@@ -29,6 +29,16 @@ namespace GildtAPI.Functions
 
             var sqlStr = $"SELECT * FROM Coupons";
             var sqlWhere = $" WHERE Id = '{id}'";
+            
+            try
+            {
+                int convId = Convert.ToInt32(id);
+            }
+            catch
+            {
+                return new BadRequestObjectResult("Invalid input");
+            }
+
             if(id != null)
             {
                 sqlStr = sqlStr + sqlWhere;
@@ -154,10 +164,29 @@ namespace GildtAPI.Functions
        
         [FunctionName("DeleteCoupons")]
         public static async Task<IActionResult> DeleteCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Coupons/{id}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Coupons/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
-            var sqlStrDelete = $"DELETE Coupons WHERE Id = {id}";
+            string qName = req.Query["name"];
+            string sqlStrDelete;
+            if(id != null)
+            {
+                sqlStrDelete = $"DELETE Coupons WHERE Id = '{id}'";
+            }
+            else
+            {
+                sqlStrDelete = $"DELETE Coupons WHERE Name = '{qName}'";
+            }
+
+            try
+            {
+                int convId = Convert.ToInt32(id);
+            }
+            catch
+            {
+                return new BadRequestObjectResult("Invalid input");
+            }
+            
 
             SqlConnection conn = DBConnect.GetConnection();
 
@@ -165,7 +194,12 @@ namespace GildtAPI.Functions
             {
                 using(SqlCommand cmd = new SqlCommand(sqlStrDelete, conn))
                 {
-                    await cmd.ExecuteNonQueryAsync();
+                   
+                    int test = await cmd.ExecuteNonQueryAsync();
+                    if(test == 0)
+                    {
+                        return (ActionResult)new NotFoundObjectResult("No coupon where found");
+                    }
                     DBConnect.Dispose(conn);
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the coupon");
                 }
@@ -205,17 +239,23 @@ namespace GildtAPI.Functions
                     {
                         try
                         {
-                            await cmd.ExecuteNonQueryAsync();
+                            int rows = await cmd.ExecuteNonQueryAsync();
+                            if(rows == 0)
+                            {
+                                return req.CreateErrorResponse(HttpStatusCode.NotFound, "Coupon not found");
+                            }
+                            else
+                            {
+                                 DBConnect.Dispose(conn);      
+                                 return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon");
+                            }
 
                         }
                         catch
                         {
                             return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured");
-                        }
-                        DBConnect.Dispose(conn);                
+                        }          
                     }
-
-                    return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon");
                 }
                 catch(InvalidCastException e)
                 {
