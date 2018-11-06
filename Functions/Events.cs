@@ -155,23 +155,23 @@ namespace GildtAPI.Functions
            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Events/Delete/{id}")] HttpRequest req,
            ILogger log, string id)
         {
+            //queries
             var sqlStr = $"DELETE Events WHERE Id = '{id}'";
 
             SqlConnection conn = DBConnect.GetConnection();
+           
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {               
+                int rowsaffect = await cmd.ExecuteNonQueryAsync();
 
-            try
-            {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                if (rowsaffect > 0)
                 {
-                    await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the event");
                 }
-            }
-            catch (InvalidCastException e)
-            {
-                return (ActionResult)new BadRequestObjectResult(e);
-            }
+
+                return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
+            }              
         }
 
         [FunctionName("AddEvent")]
@@ -219,7 +219,7 @@ namespace GildtAPI.Functions
                 missingFields.Add("DateTime End");
             }
 
-            // Returns bad request if one of the input fields are not filled in
+            // Returns bad request if one of the input fields are not filled in, gives back a status 400
             if (missingFields.Any())
             {
                 string missingFieldsSummary = String.Join(", ", missingFields);
@@ -232,7 +232,7 @@ namespace GildtAPI.Functions
             using (SqlCommand cmd2 = new SqlCommand(sqlCheckEventStr, conn))
             {
                 SqlDataReader reader = await cmd2.ExecuteReaderAsync();
-
+                // check if event already exist, check if name+startDate+EndDate combination already exist in the database, if it already exist give it a status 400
                 if (reader.HasRows == true)
                 {
                     return req.CreateResponse(HttpStatusCode.BadRequest, "Event already exist");
@@ -248,6 +248,7 @@ namespace GildtAPI.Functions
 
             // Close the database connection
             DBConnect.Dispose(conn);
+            // if everything is fine give back a status 200
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added the event");
         }
 
@@ -361,7 +362,6 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
-
             string eventId = Eventid;
             string tagId = TagId;
 
@@ -375,49 +375,47 @@ namespace GildtAPI.Functions
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
+            //check if given event exist
             using (SqlCommand cmd = new SqlCommand(sqlEventStr, conn))
             {
                 using (SqlDataReader reader = cmd.ExecuteReader())
                 {
                     // check if query has found an event by the given EventId
-                    if (reader.HasRows)
+                    if (reader.HasRows == false)
                     {
                         reader.Close();
-
-                        using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
-                        {
-                            using (SqlDataReader reader2 = cmd2.ExecuteReader())
-                            {
-                                // check if the query has found a tag with the given TagId
-                                if (reader2.HasRows)
-                                {
-                                    reader2.Close();
-
-                                    // insert in to the table EventsTags
-                                    using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
-                                    {
-                                        await cmd3.ExecuteNonQueryAsync();
-                                    }
-                                }
-                                else
-                                {
-                                    // Close the database connection
-                                    DBConnect.Dispose(conn);
-                                    return req.CreateResponse(HttpStatusCode.NotFound, "tag not found");
-                                }
-                            }
-                        }                                                                          
-                    }
-                    else
-                    {
                         // Close the database connection
                         DBConnect.Dispose(conn);
                         return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");
+                    }                    
+                }               
+            }
+
+            //check if given tag exist
+            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+            {
+                using (SqlDataReader reader2 = cmd2.ExecuteReader())
+                {
+                    // check if the query has found a tag with the given TagId
+                    if (reader2.HasRows == false)
+                    {
+                        reader2.Close();
+                        // Close the database connection
+                        DBConnect.Dispose(conn);
+                        return req.CreateResponse(HttpStatusCode.NotFound, "tag not found");                        
                     }
                 }
+            }
+
+            //execute operation
+            using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
+            {
+                // insert in to the table EventsTags
+                await cmd3.ExecuteNonQueryAsync();
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
-            }
+            }    
+            
         }
 
 
