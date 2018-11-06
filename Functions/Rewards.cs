@@ -24,7 +24,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("GetAllRewards")]
         public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Function, "get", 
-            Route = nameof(Rewards))] HttpRequest req, ILogger log)
+            Route = nameof(Rewards) + "/All")] HttpRequest req, ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetAllRewards));
             string qCount = req.Query["count"];
@@ -69,45 +69,46 @@ namespace GildtAPI.Functions
         
         [FunctionName(nameof(Rewards) + "-" + nameof(GetSingleReward))]
         public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Function, "get", 
-            Route = "Rewards/{rewardId}")] HttpRequest req, ILogger log,
-            int rewardId)
-        
-{
+            Route = "Rewards")] HttpRequest req, ILogger log){
+
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetSingleReward));
             
             string qRewardName = req.Query["rewardName"];
-            if (rewardId == null && String.IsNullOrWhiteSpace(qRewardName))
+            string qRewardId = req.Query["rewardId"];
+
+            if (qRewardId == null && String.IsNullOrWhiteSpace(qRewardName))
             {
                 //no valid rewardid or rewardname
                 return new BadRequestObjectResult("Missing parameters. Add a rewardId or rewardName parameter.");
             }
 
 
-            if (rewardId == null && qRewardName != null)
+            if (qRewardId == null && qRewardName != null)
             {
                 //No rewardId entered: get reward by name
                 if (!String.IsNullOrWhiteSpace(qRewardName))
                 {
                     //
-                    var rewardsList = await GetRewardsByName(qRewardName);
-                    if (rewardsList.Length == 0 || rewardsList.Length > 1)
+                    var reward = await GetRewardByName(qRewardName);
+                    if (reward == null)
                     {
-                        return new BadRequestObjectResult(
-                            rewardsList.Length == 0
-                                ? "No rewards with this name."
-                                : "Multiple rewards found. Something went wrong in the SQL query.");
+                        return new NotFoundObjectResult("No rewards with this name.");
                     }
-                    return new OkObjectResult(rewardsList[0]);
+                    return new OkObjectResult(reward);
                 }
             }
-            else if (rewardId != null)
+            else if (int.TryParse(qRewardId, out int rewardId))
             {
-                Reward reward = await GetRewardById((int)rewardId);
+                Reward reward = await GetRewardById(rewardId);
+                if (reward == null)
+                {
+                    return new NotFoundObjectResult("Reward not found.");
+                }
                 string rewardsJson = JsonConvert.SerializeObject(reward);
                 return new OkObjectResult(rewardsJson);
             }
 
-            return new BadRequestObjectResult("Something weird happened.");
+            return new BadRequestObjectResult("No valid id entered");
 
         }
 
@@ -135,7 +136,8 @@ namespace GildtAPI.Functions
                 return new BadRequestObjectResult(missingFieldsSummary);
             }
             bool success = await CreateReward(name, description);
-            if (success) return new OkObjectResult("Successfully created the reward.");
+            if (success) return new OkObjectResult(
+                JsonConvert.SerializeObject(new Reward() { Name = name, Description = description }));
             else return new BadRequestObjectResult($"Reward named {name} already exists!");
         }
         
@@ -322,16 +324,20 @@ namespace GildtAPI.Functions
                         };
                 }
             }
-            //
+            if (rewardsList.Count == 0)
+            {
+                //no reward found
+                return null;
+            }
 
             return rewardsList.ToArray()[0];
         }
 
-        private static async Task<Reward[]> GetRewardsByName(string rewardName)
+        private static async Task<Reward> GetRewardByName(string rewardName)
         {
             //SQL query to get newest reward with name
             string sqlQuery =
-                $"SELECT TOP ({Constants.DEFAULTCOUNT}) [Id],[Name],[Description] " +
+                $"SELECT TOP (1) [Id],[Name],[Description] " +
                 "FROM [dbo].[Rewards] " +
                $"WHERE Rewards.Name = '{rewardName}' " +
                 //order by descending id to get newest entry
@@ -347,18 +353,16 @@ namespace GildtAPI.Functions
                 while (reader.Read())
                 {
 
-                    rewardsList.Add(
+                    return
                         new Reward()
                         {
                             Id = int.Parse(reader["Id"].ToString()),
                             Name = reader["Name"].ToString(),
                             Description = reader["Description"].ToString()
-                        }
-                    );
+                        };
                 }
             }
-
-            return rewardsList.ToArray();
+            return null;
         }
 
         #endregion Get
