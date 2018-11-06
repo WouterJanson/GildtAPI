@@ -25,11 +25,9 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Events/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
-
             List<Event> events = new List<Event>();
 
             string qCount = req.Query["count"];
-
             if (qCount == null)
             {
                 qCount = "20";
@@ -64,12 +62,10 @@ namespace GildtAPI.Functions
                     using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                     {
                         SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
                         if (reader.HasRows == false)
                         {
                             return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
                         }
-
                         reader.Close();
                     }
             }
@@ -79,6 +75,8 @@ namespace GildtAPI.Functions
                 sqlStr = sqlStr + sqlOrder;
             }
             
+
+
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -157,6 +155,16 @@ namespace GildtAPI.Functions
         {
             //queries
             var sqlStr = $"DELETE Events WHERE Id = '{id}'";
+
+            // error handling for if input is valid
+            if (id != null)
+            {
+                //check if id is numeric, if it is a number it will give back true if not false
+                if (Regex.IsMatch(id, @"^\d+$") == false)
+                {
+                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric");
+                }
+            }
 
             SqlConnection conn = DBConnect.GetConnection();
            
