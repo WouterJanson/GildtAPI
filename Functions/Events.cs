@@ -433,12 +433,6 @@ namespace GildtAPI.Functions
         ILogger log, string id)
         {
             var sqlStr = $"DELETE Tags WHERE Id = '{id}'";
-            //controleren op invoer, numeric en _ waarde
-            if (!int.TryParse(id, out int Id) || Id < 0)
-            {
-                return new BadRequestObjectResult("Invalid input");
-            }
-
 
             SqlConnection conn = DBConnect.GetConnection();
 
@@ -451,7 +445,7 @@ namespace GildtAPI.Functions
                     DBConnect.Dispose(conn);
                     if (affectedRows == 0)
                     {
-                        return new NotFoundObjectResult(
+                        return new BadRequestObjectResult(
                             $"Deleting TAGS failed: Tag {id} does not have any tags!");
                     }
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the tag");
@@ -459,7 +453,7 @@ namespace GildtAPI.Functions
             }
             catch (InvalidCastException e)
             {
-                return (ActionResult)new BadRequestObjectResult(e.Message);
+                return (ActionResult)new BadRequestObjectResult(e);
             }
         }
 
