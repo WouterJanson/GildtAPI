@@ -1,0 +1,44 @@
+test_name: Add a tagg to a event
+
+stages:
+  - name: Assign tag to the event
+    request:
+      url: http://localhost:7071/api/Events/Tags/Add/7/23
+      method: POST
+    response:
+      status_code: 200
+      
+  - name: Add a already existing tag to the Event
+    request:
+      url: http://localhost:7071/api/Events/Tags/Add/3/23
+      method: POST
+    response:
+      status_code: 400
+
+  - name: Add a tag to the event where the event does not exist
+    request:
+      url: http://localhost:7071/api/Events/Tags/Add/2323/23
+      method: POST
+    response:
+      status_code: 404
+
+  - name: Add a tag to the event where the tag does not exist
+    request:
+      url: http://localhost:7071/api/Events/Tags/Add/3/234
+      method: POST
+    response:
+      status_code: 404
+
+  - name: Invalid Input on EventId
+    request:
+      url: http://localhost:7071/api/Events/Tags/Add/A/23
+      method: POST
+    response:
+      status_code: 400
+
+  - name: Invalid Input on TagId
+    request:
+      url: http://localhost:7071/api/Events/Tags/Add/4/AB
+      method: POST
+    response:
+      status_code: 400
