@@ -39,7 +39,7 @@ namespace GildtAPI.Functions
                 //check if id is numeric, if it is a number it will give back true if not false
                 if (Regex.IsMatch(id, @"^\d+$") == false)
                 {
-                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric");
+                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric and not negative");
                 }
             }
             
@@ -162,7 +162,7 @@ namespace GildtAPI.Functions
                 //check if id is numeric, if it is a number it will give back true if not false
                 if (Regex.IsMatch(id, @"^\d+$") == false)
                 {
-                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric");
+                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric and not negative");
                 }
             }
 
@@ -297,7 +297,7 @@ namespace GildtAPI.Functions
                 //check if id is numeric, if it is a number it will give back true if not false
                 if (Regex.IsMatch(id, @"^\d+$") == false) 
                 {
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, id should be numeric"); // status 400
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, id should be numeric and not negative"); // status 400
                 }
             }
 
@@ -395,9 +395,28 @@ namespace GildtAPI.Functions
             var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";
             // querry to validate Tag (does it exist?)
             var sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id ='{tagId}'";
+            // querry to check if the given tag is already assigned to a event
+            var SqlCheckIfAssigned = $"SELECT TagsId, EventsId FROM EventsTags WHERE TagsId = '{tagId}' AND EventsId = '{eventId}'";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
+
+            if (eventId != null)
+            {
+                //check if id is numeric, if it is a number it will give back true if not false
+                if (Regex.IsMatch(eventId, @"^\d+$") == false)
+                {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, EventId should be numeric and not negative"); // status 400
+                }
+            }
+
+            if (tagId != null)
+            {                
+                if (Regex.IsMatch(tagId, @"^\d+$") == false)
+                {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, TagId should be numeric and not negative"); 
+                }
+            }
 
             //check if given event exist
             using (SqlCommand cmd = new SqlCommand(sqlEventStr, conn))
@@ -431,17 +450,31 @@ namespace GildtAPI.Functions
                 }
             }
 
-            //execute operation
+            //check if a tag is already assigned to the event
+            using (SqlCommand cmd4 = new SqlCommand(SqlCheckIfAssigned, conn))
+            {
+                using (SqlDataReader reader4 = cmd4.ExecuteReader())
+                {
+                    // check if the query has found a tag with the given TagId
+                    if (reader4.HasRows == true)
+                    {
+                        reader4.Close();
+                        // Close the database connection
+                        DBConnect.Dispose(conn);
+                        return req.CreateResponse(HttpStatusCode.BadRequest, "tag is already assigned to the event");
+                    }
+                }
+            }
+
+            //execute operation if everything is OK
             using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
             {
                 // insert in to the table EventsTags
                 await cmd3.ExecuteNonQueryAsync();
                 DBConnect.Dispose(conn);
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
-            }    
-            
+            }               
         }
-
 
         [FunctionName("DeleteTags")]
         public static async Task<IActionResult> DeleteTags(
@@ -452,25 +485,28 @@ namespace GildtAPI.Functions
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            try
+            if (id != null)
             {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                //check if id is numeric, if it is a number it will give back true if not false
+                if (Regex.IsMatch(id, @"^\d+$") == false)
                 {
-                    int affectedRows = cmd.ExecuteNonQuery();
-                    //cmd.ExecuteNonQuery();
-                    DBConnect.Dispose(conn);
-                    if (affectedRows == 0)
-                    {
-                        return new BadRequestObjectResult(
-                            $"Deleting TAGS failed: Tag {id} does not have any tags!");
-                    }
-                    return (ActionResult)new OkObjectResult("Sucessfully deleted the tag");
+                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric and not negative"); // status 400
                 }
             }
-            catch (InvalidCastException e)
+         
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                return (ActionResult)new BadRequestObjectResult(e);
-            }
+                int affectedRows = cmd.ExecuteNonQuery();
+                //cmd.ExecuteNonQuery();
+                DBConnect.Dispose(conn);
+                if (affectedRows == 0)
+                {
+                return new NotFoundObjectResult($"Deleting TAGS failed: Tag {id} does not have any tags!");
+                }
+
+                return (ActionResult)new OkObjectResult("Sucessfully deleted the tag");
+            }            
+           
         }
 
 
