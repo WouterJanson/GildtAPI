@@ -1,0 +1,30 @@
+test_name: Edit a event from the database 
+
+stages:
+  - name: Edit Event
+    request:
+      url: http://localhost:7071/api/Events/Edit/2
+      method: PUT
+      data:
+        title: Vrijgezelenfeest44
+    response:
+      status_code: 200 
+
+  - name: a non existing event
+    request:
+      url: http://localhost:7071/api/Events/Edit/2333
+      method: PUT
+      data:
+        title: Vrijgezelenfeest44
+    response:
+      status_code: 404
+
+  - name: Invalid input
+    request:
+      url: http://localhost:7071/api/Events/Edit/abc
+      method: PUT
+      data:
+        title: Vrijgezelenfeest44
+    response:
+      status_code: 400
+

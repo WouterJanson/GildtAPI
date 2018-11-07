@@ -1,0 +1,26 @@
+test_name: Delete a event from the database 
+
+stages:
+  - name: Delete Event
+    request:
+      url: http://localhost:7071/api/Events/Delete/25
+      method: DELETE
+    response:
+      status_code: 200
+
+  - name: Delete not existing Event
+    request:
+      url: http://localhost:7071/api/Events/Delete/21234
+      method: DELETE
+    response:
+      status_code: 404
+
+  - name: Invalid Input 
+    request:
+      url: http://localhost:7071/api/Events/Delete/jjj
+      method: DELETE
+    response:
+      status_code: 400
+
+
+

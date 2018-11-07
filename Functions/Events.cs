@@ -292,17 +292,33 @@ namespace GildtAPI.Functions
                 $"IsActive = COALESCE({(isActiveString == null ? "NULL" : $"\'{isActiveString}\'")}, IsActive) " +
                 $" WHERE id = {id};";
 
+            if (id != null)
+            {
+                //check if id is numeric, if it is a number it will give back true if not false
+                if (Regex.IsMatch(id, @"^\d+$") == false) 
+                {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, id should be numeric"); // status 400
+                }
+            }
+
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                await cmd.ExecuteNonQueryAsync();
+                int rowsaffect = await cmd.ExecuteNonQueryAsync();
+
+                // check if rows in the database have been affected, if it went succefult than the given EventId exist
+                if (rowsaffect > 0)
+                {
+                    // Close the database connection
+                    DBConnect.Dispose(conn);
+                    return req.CreateResponse(HttpStatusCode.OK, "Sucessfully edited the event"); // status 200
+                }
+
+                return req.CreateResponse(HttpStatusCode.NotFound, "Invalid input, event does not exist"); // status 404
             }
 
-            // Close the database connection
-            DBConnect.Dispose(conn);
-            return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the event");
         }
 
 
@@ -321,7 +337,7 @@ namespace GildtAPI.Functions
             var sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
 
             //Checks if the input fields are filled in
-            if (tag == "")
+            if (tag == "" || tag == null)
             {
                 missingFields.Add("Tag");
             }
@@ -347,7 +363,7 @@ namespace GildtAPI.Functions
                 {
                     // Close the database connection
                     DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.ExpectationFailed, "Could not create tag, tag does already exist... this would create a dublicate tag");
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Could not create tag, tag does already exist... this would create a dublicate tag");
                 }
 
                 reader.Close();

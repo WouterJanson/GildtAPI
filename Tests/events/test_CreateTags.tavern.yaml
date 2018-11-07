@@ -1,0 +1,31 @@
+test_name: Create a tag and put in the database 
+
+stages:
+  - name: Create tag
+    request:
+      url: http://localhost:7071/api/Events/Tags/Create
+      method: POST
+      data:
+        tag: TavernTag2
+    response:
+      status_code: 200
+      
+
+  - name: Create already existing Tag
+    request:
+      url: http://localhost:7071/api/Events/Tags/Create
+      method: POST
+      data:
+        tag: bomb
+    response:
+      status_code: 400
+
+  - name: Not all input field are filled in 
+    request:
+      url: http://localhost:7071/api/Events/Tags/Create
+      method: POST
+      data:
+        tag: 
+    response:
+      status_code: 411
+

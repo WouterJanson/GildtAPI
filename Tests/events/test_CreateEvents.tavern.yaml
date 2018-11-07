@@ -1,0 +1,47 @@
+test_name: Create a event from the database 
+
+stages:
+  - name: Create Event
+    request:
+      url: http://localhost:7071/api/Events/Add
+      method: POST
+      data:
+        title: Tavern Test
+        location: TavernLoc
+        dateTimeStart: 2007-01-28 20:10:02
+        dateTimeEnd: 2007-07-28 20:12:02
+        shortdescription: TavernShrtDescr
+        longdescription: TavernLongDescr
+        image: /tavernURL
+
+    response:
+      status_code: 200
+      
+
+  - name: Create already existing Event
+    request:
+      url: http://localhost:7071/api/Events/Add
+      method: POST
+      data:
+        title: Tavern Test
+        location: TavernLoc
+        dateTimeStart: 2007-01-28 20:10:02
+        dateTimeEnd: 2007-07-28 20:12:02
+        shortdescription: TavernShrtDescr
+        longdescription: TavernLongDescr
+        image: /tavernURL
+    response:
+      status_code: 400
+
+  - name: Not all input field are filled in 
+    request:
+      url: http://localhost:7071/api/Events/Add
+      method: POST
+      data:
+        Name: Tavern Test2
+        EndDate: '2007-07-30T20:12:02'
+        Type: 0
+        Image: /tavern
+    response:
+      status_code: 400
+
