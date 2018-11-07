@@ -34,7 +34,7 @@ namespace GildtAPI.Functions
 
      
 
-            //controleren of userId niet kleinder is als 0 en op input
+            //controleren of userId niet kleinder is als 0 en of die numeric is
             if (!int.TryParse(id, out int Id) || Id < 0)
             {
                 return new BadRequestObjectResult("Invalid input");
@@ -92,7 +92,9 @@ namespace GildtAPI.Functions
             string j = JsonConvert.SerializeObject(AllRequests);
 
             return AllRequests.Count > 0
+                   // groter dan 0 dus 1 of meer requests return json met values
                 ? (ActionResult)new OkObjectResult(j)
+                // en anders 404 niet gevonden
                 : new NotFoundObjectResult("No songs were found");
         }
 
@@ -113,7 +115,7 @@ namespace GildtAPI.Functions
 
                 try
                 {
-                 
+                    //wacht op query tot het is afgerond geef waarde aan affectedrows
                     int affectedRows = await cmd.ExecuteNonQueryAsync();
                     DBConnect.Dispose(conn);
                     // controleren of er rows zijn aangepast in de database zo niet return 404
@@ -174,15 +176,16 @@ namespace GildtAPI.Functions
                 missingFields.Add("Artist");
             }
 
-            // Returns bad request if one of the input fields are not filled in
+            // Als er velden ontbreken return 400 badrequest
             if (missingFields.Any())
             {
                 string missingFieldsSummary = String.Join(", ", missingFields);
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
-            //controleren of userId niet kleinder is als 0 of niet numeric zijn
+            //controleren of userId niet kleinder is als 0 of als input niet numeric zijn
             if (!int.TryParse(UserId, out int userId) || userId < 0)
             {
+                //return 400 
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"UserId is not a valid number.");
             }
 
@@ -195,13 +198,14 @@ namespace GildtAPI.Functions
             {
                 try
                 {
+
                     await cmd.ExecuteNonQueryAsync();
                 }
                 catch(Exception e)
                 {
                     //bestaat gebruiker niet return 400
                     DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist!" + e.Message);
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist! " + e.Message);
                 }
                 
             }
