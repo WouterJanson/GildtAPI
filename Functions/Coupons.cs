@@ -30,9 +30,13 @@ namespace GildtAPI.Functions
             var sqlStr = $"SELECT * FROM Coupons";
             var sqlWhere = $" WHERE Id = '{id}'";
             
+            // Check if input is valid
             try
             {
-                int convId = Convert.ToInt32(id);
+                if(id != null)
+                {
+                    int convId = Convert.ToInt32(id);
+                }
             }
             catch
             {
@@ -175,12 +179,12 @@ namespace GildtAPI.Functions
             }
             else
             {
-                sqlStrDelete = $"DELETE Coupons WHERE Name = '{qName}'";
+                sqlStrDelete = $"DELETE Coupons WHERE Username = '{qName}'";
             }
 
             try
             {
-                int convId = Convert.ToInt32(id);
+                Convert.ToInt32(id);
             }
             catch
             {
@@ -195,8 +199,8 @@ namespace GildtAPI.Functions
                 using(SqlCommand cmd = new SqlCommand(sqlStrDelete, conn))
                 {
                    
-                    int test = await cmd.ExecuteNonQueryAsync();
-                    if(test == 0)
+                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    if(rowsAffected == 0)
                     {
                         return (ActionResult)new NotFoundObjectResult("No coupon where found");
                     }
