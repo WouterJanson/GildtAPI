@@ -104,7 +104,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteSongRequest")]
         public static async Task<IActionResult> DeleteSongRequest(
-            [HttpTrigger(AuthorizationLevel.Function, "Delete", Route = "SongRequest/{id?}/")]
+            [HttpTrigger(AuthorizationLevel.Function, "Delete", Route = "SongRequest/{id}/")]
             HttpRequest req,
             ILogger log, string id)
         {
