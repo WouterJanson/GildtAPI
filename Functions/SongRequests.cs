@@ -35,8 +35,11 @@ namespace GildtAPI.Functions
 
 
 
-            //controleren of userId niet kleinder is als 0 en of die numeric is
-            if (!int.TryParse(id, out int Id) || Id < 0)
+            try
+            {
+                int convId = Convert.ToInt32(id);
+            }
+            catch
             {
                 return new BadRequestObjectResult("Invalid input");
             }
@@ -105,9 +108,11 @@ namespace GildtAPI.Functions
             HttpRequest req,
             ILogger log, string id)
         {
+
+       
             var sqlStr = $"DELETE SongRequest WHERE Id = '{id}'";
             SqlConnection conn = DBConnect.GetConnection();
-
+         
 
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
@@ -154,7 +159,7 @@ namespace GildtAPI.Functions
             string UserId = formData["UserId"];
 
 
-            // Queries vul database met opgegeven input
+            // Queries vul database met  input
             var sqlStr =
                 $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
                 $"VALUES ('{Title}', '{Artist}', '{DateTime.UtcNow}', '{UserId}')";
