@@ -29,6 +29,19 @@ namespace GildtAPI.Functions
             List<UsersCoupon> couponsList = new List<UsersCoupon>();
 
             string qCount = req.Query["count"];
+
+            // Check if input is valid
+            try
+            {
+                if(id != null)
+                {
+                    int ValidInput = Convert.ToInt32(id);
+                }
+            }
+            catch
+            {
+                return new BadRequestObjectResult("Invalid input");
+            }
             //Default count number - Used to select number of rows
             if(qCount == null)
             {
@@ -110,10 +123,28 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteUser")]
         public static async Task<IActionResult> DeleteUser(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Users/{id}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Users/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
-            var sqlStr = $"DELETE FROM Users WHERE Users.Id = '{id}'";
+            string qUsername = req.Query["username"];
+            string sqlStr;
+            if(id != null)
+            {
+                sqlStr = $"DELETE FROM Users WHERE Users.Id = '{id}'";
+            }
+            else
+            {
+                sqlStr = $"DELETE FROM Users WHERE Users.Username = '{qUsername}'";
+            }
+
+            try
+            {
+                Convert.ToInt32(id);
+            }
+            catch
+            {
+                return new BadRequestObjectResult("Invalid input");
+            }
 
             SqlConnection conn = DBConnect.GetConnection();
 
@@ -121,7 +152,11 @@ namespace GildtAPI.Functions
             {
                 using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                 {
-                    await cmd.ExecuteNonQueryAsync();
+                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    if(rowsAffected == 0)
+                    {
+                        return (ActionResult)new NotFoundObjectResult("No user(s) where found");
+                    }
                     DBConnect.Dispose(conn);
                     return (ActionResult)new OkObjectResult("Sucessfully deleted the user");
                 }
@@ -224,7 +259,11 @@ namespace GildtAPI.Functions
                 {
                     try
                     {
-                        await cmd.ExecuteNonQueryAsync();
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        if(rowsAffected == 0)
+                        {
+                            return req.CreateResponse(HttpStatusCode.NotFound, "No User(s) where found");
+                        }
                     }
                     catch
                     {

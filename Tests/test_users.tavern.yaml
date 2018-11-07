@@ -1,0 +1,126 @@
+test_name: Get a coupon from the database
+
+stages:
+  - name: Make sure we have the right User
+    request:
+      url: http://localhost:7071/api/Users/0
+      method: GET
+    response:
+      status_code: 200
+      body:
+        [{
+            Username: 'mdejonge',
+            Email: 'accounts@mennodejonge.nl',
+            IsAdmin: False,
+            Password: 'passwordMenno',
+            Id: 0,
+            Coupons: [
+              {
+                StartDate: '2007-04-30T20:10:02',
+                EndDate: '2007-04-30T20:12:02',
+                Description: 'Tavern test',
+                Image: '/test',
+                UserId: 0,
+                TotalUsed: 0,
+                Name: 'TestCoupon',
+                Type: 0,
+                CouponId: 0
+              }
+            ]
+        }]
+
+  - name: Not existed user selected
+    request:
+      url: http://localhost:7071/api/Users/827262
+      method: GET
+    response:
+      status_code: 404
+  
+  - name: Invalid input
+    request:
+      url: http://localhost:7071/api/Users/sdfjh
+      method: GET
+    response:
+      status_code: 400
+
+test_name: Create new User
+
+stages:
+  - name: Create User
+    request:
+      url: http://localhost:7071/api/Users/Register
+      method: POST
+      data:
+        Username: Tavern User
+        Email: user@tavern.tavern
+        Password: TestPassword
+    response:
+      status_code: 200
+
+  - name: Create already existing user
+    request:
+      url: http://localhost:7071/api/Coupons/
+      method: POST
+      data:
+        Username: Tavern User
+        Email: user@tavern.tavern
+        Password: TestPassword
+    response:
+      status_code: 400
+
+  - name: Not all input field are filled in
+    request:
+      url: http://localhost:7071/api/Coupons/
+      method: POST
+      data:
+        Username: Tavern User
+        Email: user@tavern.tavern
+    response:
+      status_code: 400
+
+test_name: Delete coupons
+
+stages:
+  - name: Delete User
+    request:
+      url: http://localhost:7071/api/Users/
+      method: DELETE
+      params:
+        username: Tavern User
+    response:
+      status_code: 200
+
+  - name: Delete not existing user
+    request:
+      url: http://localhost:7071/api/Users/92029467
+      method: DELETE
+    response:
+      status_code: 404
+  
+  - name: Invalid input
+    request:
+      url: http://localhost:7071/api/Users/jskdj
+      method: DELETE
+    response:
+      status_code: 400
+
+test_name: Edit coupons
+
+stages:
+  - name: Successfull edit user
+    request:
+      url: http://localhost:7071/api/Users/0
+      method: PUT
+      data:
+        isadmin: 1
+    response:
+      status_code: 200
+
+  - name: Edit not existing user
+    request:
+      url: http://localhost:7071/api/Users/099888724
+      method: PUT
+      data:
+        isadmin: 1
+    response:
+      status_code: 404
