@@ -1,0 +1,20 @@
+﻿test_name: Edit coupons
+
+stages:
+  - name: Successfull edit coupon
+    request:
+      url: http://localhost:7071/api/Events/Tags/1
+      method: PUT
+      data:
+        Name: test
+    response:
+      status_code: 200
+
+  - name: Edit not existing coupon
+    request:
+      url: http://localhost:7071/api/Coupons/099888724
+      method: PUT
+      data:
+        Name: test
+    response:
+      status_code: 404

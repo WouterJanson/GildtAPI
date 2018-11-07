@@ -1,0 +1,22 @@
+﻿test_name: Delete SongRequest
+stages:
+  - name: Create SongRequest
+    request:
+      url: http://localhost:7071/api/SongRequest/Add
+      method: POST
+      data:
+        Title: Test,
+        UserId: 1
+        Artist: "Test"
+    response:
+      status_code: 200
+
+  - name: Not all input field are filled in
+    request:
+      url: http://localhost:7071/api/SongRequest/Add
+      method: POST
+      data:
+        Title: Test,
+        UserId: 1
+    response:
+      status_code: 400
