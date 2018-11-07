@@ -22,7 +22,7 @@ namespace GildtAPI.Functions
     {
         [FunctionName("Users")]
         public static async Task<IActionResult> GetUsers(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Users/{id?}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Users/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
             List<User> users = new List<User>();
