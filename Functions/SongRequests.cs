@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
@@ -32,7 +33,7 @@ namespace GildtAPI.Functions
                 qCount = "20";
             }
 
-     
+
 
             //controleren of userId niet kleinder is als 0 en of die numeric is
             if (!int.TryParse(id, out int Id) || Id < 0)
@@ -55,7 +56,7 @@ namespace GildtAPI.Functions
 
             var sqlWhere = $" WHERE sr.Id = {id}";
 
-       
+
 
             //controleren op {id} Als het bestaat Add where op query
             if (id != null)
@@ -72,7 +73,7 @@ namespace GildtAPI.Functions
 
                 while (reader.Read())
                 {
-                    
+
                     AllRequests.Add(new Model.SongRequest()
                     {
                         Id = Convert.ToInt32(reader["RequestId"]),
@@ -92,7 +93,7 @@ namespace GildtAPI.Functions
             string j = JsonConvert.SerializeObject(AllRequests);
 
             return AllRequests.Count > 0
-                   // groter dan 0 dus 1 of meer requests return json met values
+                // groter dan 0 dus 1 of meer requests return json met values
                 ? (ActionResult)new OkObjectResult(j)
                 // en anders 404 niet gevonden
                 : new NotFoundObjectResult("No songs were found");
@@ -130,11 +131,11 @@ namespace GildtAPI.Functions
                 catch (Exception e)
                 {
                     //return 400 als er een invalid object is > "jjjj"
-                    return new BadRequestObjectResult("invalid id "+  e.Message);
+                    return new BadRequestObjectResult("invalid id " + e.Message);
                 }
             }
 
-          
+
         }
 
         [FunctionName("AddSongRequest")]
@@ -192,7 +193,7 @@ namespace GildtAPI.Functions
 
             ////Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
-    
+
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
@@ -201,13 +202,13 @@ namespace GildtAPI.Functions
 
                     await cmd.ExecuteNonQueryAsync();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     //bestaat gebruiker niet return 400
                     DBConnect.Dispose(conn);
                     return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist! " + e.Message);
                 }
-                
+
             }
 
 
@@ -217,6 +218,175 @@ namespace GildtAPI.Functions
             //bestaat gebruiker wel return 200
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added the song request");
 
+
+        }
+
+        [FunctionName("UpVotesSongRequest")]
+        public static async Task<HttpResponseMessage> UpvoteSongRequest(
+           [HttpTrigger(AuthorizationLevel.Function, "post", Route = "SongRequest/{RequestId}/{UserId}/upvote")]
+            HttpRequestMessage req, string RequestId, string UserId,
+           ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+
+            int vote = 1;
+
+            //rij toevoegen als die nog niet bestaat
+            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values ('{RequestId}', '{UserId}', '{vote}')";
+
+            //alle songrequests met een upvote
+            var sqlGet1 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '1' ";
+            //alle songrequests met een downvote
+            var sqlGet2 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '-1' ";
+
+            //update downvote naar upvote
+            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
+                                $"Vote = {vote} " +
+                                $" WHERE RequestId = {RequestId} AND UserId = {UserId};";
+
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+
+            using (SqlCommand cmd2 = new SqlCommand(sqlGet1, conn))
+            //check if user have already upvoted
+            using (SqlDataReader reader = cmd2.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    // Close the database connection
+                    DBConnect.Dispose(conn);
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "You've already up voted for this song");
+                }
+                reader.Close();
+            }
+
+            // Update usersvote to upvote if it where downvote
+            using (SqlCommand cmd3 = new SqlCommand(sqlGet2, conn))
+
+            using (SqlDataReader reader = cmd3.ExecuteReader())
+            {
+                // controlleer of er al een vote was in dit geval downvote
+                if (reader.HasRows)
+                {
+                    reader.Close();
+                    // update database row
+                    using (SqlCommand cmd4 = new SqlCommand(sqlUpdateVote, conn))
+                    {
+                        cmd4.ExecuteReader();
+                        DBConnect.Dispose(conn);
+                        return req.CreateResponse(HttpStatusCode.Accepted, "User has now a Upvote for this song");
+
+                    }
+                }
+            }
+
+
+            // insert a usersvote to a song
+            using (SqlCommand cmd5 = new SqlCommand(sqlStr, conn))
+            {
+                cmd5.ExecuteReader();
+                DBConnect.Dispose(conn);
+                return req.CreateResponse(HttpStatusCode.OK, "User has upvoted this song (NEW)");
+            }
+
+        }
+
+        [FunctionName("DownVotesSongRequest")]
+        public static async Task<HttpResponseMessage> DownvotesSongRequest(
+              [HttpTrigger(AuthorizationLevel.Function, "post", Route = "SongRequest/{RequestId}/{UserId}/downvote")]
+            HttpRequestMessage req, string RequestId, string UserId,
+              ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+
+            int vote = -1;
+
+            //controleren of opgegeven request id niet kleiner dan 0 is en numeric is
+            if (!int.TryParse(RequestId, out int requestId) || requestId < 0)
+            {
+                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured - request id");
+            }
+            //controleren of opgegeven user id niet kleiner dan 0 is en numeric is
+            if (!int.TryParse(UserId, out int userId) || userId < 0)
+            {
+                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured - user id ");
+            }
+
+            //rij toevoegen als die nog niet bestaat
+
+            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values ('{RequestId}', '{UserId}', '{vote}')";
+
+            //alle songrequests met een downvote
+            var sqlGet1 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '-1' ";
+            //alle songrequests met een upvote
+            var sqlGet2 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '1' ";
+            //update van upvote naar downvote
+            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
+                                $"Vote = {vote} " +
+                                $" WHERE RequestId = {RequestId} AND UserId = {UserId};";
+
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+
+            using (SqlCommand cmd2 = new SqlCommand(sqlGet1, conn))
+            //check if user have already upvoted
+            using (SqlDataReader reader = cmd2.ExecuteReader())
+            {
+
+                if (reader.HasRows)
+                {
+                    // Close the database connection
+                    DBConnect.Dispose(conn);
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "You've already downvoted for this song");
+                }
+                reader.Close();
+
+            }
+
+            // Update usersvote to upvote if it where downvote
+            using (SqlCommand cmd3 = new SqlCommand(sqlGet2, conn))
+
+            using (SqlDataReader reader = cmd3.ExecuteReader())
+            {
+
+                // controlleer of er al een vote was in dit geval downvote
+                if (reader.HasRows)
+                {
+                    reader.Close();
+                    // update database row
+                    using (SqlCommand cmd4 = new SqlCommand(sqlUpdateVote, conn))
+                    {
+                        cmd4.ExecuteReader();
+                        DBConnect.Dispose(conn);
+                        return req.CreateResponse(HttpStatusCode.Accepted, "User has now a downvote for this song");
+
+                    }
+
+                }
+                
+            }
+
+
+            // insert a usersvote to a song
+            using (SqlCommand cmd5 = new SqlCommand(sqlStr, conn))
+            {
+                try
+                {
+                    cmd5.ExecuteReader();
+                    DBConnect.Dispose(conn);
+                    return req.CreateResponse(HttpStatusCode.OK, "User has downvoted this song (NEW)");
+
+                }
+                catch (Exception e)
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.NotFound, "An error has occured  " + e.Message);
+                }
+
+            }
 
         }
     }
