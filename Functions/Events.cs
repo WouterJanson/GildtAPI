@@ -62,6 +62,7 @@ namespace GildtAPI.Functions
                     using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                     {
                         SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
                         if (reader.HasRows == false)
                         {
                             return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
@@ -69,20 +70,18 @@ namespace GildtAPI.Functions
                         reader.Close();
                     }
             }
-
             else
             {
                 sqlStr = sqlStr + sqlOrder;
             }
             
 
-
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
 
                 Event currentEvent = null;
-                List<Tag> currentEventTags = new List<Tag>();
+                List<Tag> currentEventTagsList = new List<Tag>();
 
                 while (reader.Read())
                 {
@@ -100,41 +99,33 @@ namespace GildtAPI.Functions
                         LongDescription = reader["LongDescription"].ToString()
                     };
 
+                    //check if it is the first event from the reader
                     if (currentEvent == null)
-                    {
-                        //reading first event
+                    {                        
                         currentEvent = newEvent;
                     }
 
+                    // check if reader got a new event
                     if (currentEvent.Id != newEvent.Id)
                     {
-                        //reading next event: save all read tags + save event to list
-                        currentEvent.Tags = currentEventTags.ToArray();
-                        currentEventTags = new List<Tag>();
+                        currentEvent.Tags = currentEventTagsList.ToArray(); //sla alle tags in de list van "currentEventTags" op in current event.tags zodra een nieuwe event binnenkomt.                       
+                                               
+                        events.Add(currentEvent); //add the event with its tags to the events list                       
+                        currentEvent = newEvent; // the new event will now be current event
 
-                        events.Add(currentEvent);
-                        currentEvent = newEvent;
+                        currentEventTagsList = new List<Tag>(); // make a new empty list of "currentEventTags" when a new event has been read
                     }
 
-                    //read tag
-                    string tagIdstr = reader["TagId"].ToString();
-
-                    if (String.IsNullOrWhiteSpace(tagIdstr))
-                    {
-                        //tag is null, don't add
-                        continue;
-                    }
-
-                    int tagId = int.Parse(tagIdstr);
+                    //read the TagId + TagName of the corresponding Event
+                    int tagId = Convert.ToInt32(reader["TagId"]);                  
                     string tagName = reader["Tag"].ToString();
 
-                    //Add tag to current events tags
-                    currentEventTags.Add(new Tag(tagId, tagName));
-                    log.LogInformation($"Read tag with id {tagIdstr} eventid {currentEvent.Id}");
+                    //Add tag to current event tags List
+                    currentEventTagsList.Add(new Tag(tagId, tagName));
                 }
 
-                //add last read eventtags + event to list
-                currentEvent.Tags = currentEventTags.ToArray();
+                //add the last event from the reader 
+                currentEvent.Tags = currentEventTagsList.ToArray();
                 events.Add(currentEvent);
                 reader.Close();
             }
@@ -145,7 +136,7 @@ namespace GildtAPI.Functions
 
             return events != null
                 ? (ActionResult)new OkObjectResult(j)
-                : new BadRequestObjectResult("No events where found");
+                : new NotFoundObjectResult("No events where found");
         }
 
         [FunctionName("DeleteEvent")]
@@ -172,6 +163,7 @@ namespace GildtAPI.Functions
             {               
                 int rowsaffect = await cmd.ExecuteNonQueryAsync();
 
+                //check if the query has affected any rows if not than the given EventId does not exist
                 if (rowsaffect > 0)
                 {
                     DBConnect.Dispose(conn);
