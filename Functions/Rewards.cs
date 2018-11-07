@@ -45,7 +45,7 @@ namespace GildtAPI.Functions
         [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
         public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", 
             Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log, 
-            int userId)
+            string userId)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
             string qCount = req.Query["count"];
@@ -57,7 +57,11 @@ namespace GildtAPI.Functions
                     return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
                 }
             }
-            Reward[] userRewards = await GetUserRewards(count, userId);
+            if(!int.TryParse(userId, out int id))
+            {
+                return new BadRequestObjectResult("Invalid input");
+            }
+            Reward[] userRewards = await GetUserRewards(count, id);
 
             if (userRewards.Length == 0)
             {

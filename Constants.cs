@@ -10,6 +10,6 @@ namespace GildtAPI
 
         public const string DBUSERNAME = "ServerAdmin";
 
-        public const string DBPASSWORD = "Krijgdetering123!";
+        public const string DBPASSWORD = "Gildtaccess123!";
     }
 }
