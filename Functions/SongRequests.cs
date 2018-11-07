@@ -276,7 +276,7 @@ namespace GildtAPI.Functions
                     {
                         cmd4.ExecuteReader();
                         DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.Accepted, "User has now a Upvote for this song");
+                        return req.CreateResponse(HttpStatusCode.OK, "User has now a Upvote for this song");
 
                     }
                 }
@@ -286,9 +286,17 @@ namespace GildtAPI.Functions
             // insert a usersvote to a song
             using (SqlCommand cmd5 = new SqlCommand(sqlStr, conn))
             {
-                cmd5.ExecuteReader();
-                DBConnect.Dispose(conn);
-                return req.CreateResponse(HttpStatusCode.OK, "User has upvoted this song (NEW)");
+                try
+                {
+                    cmd5.ExecuteReader();
+                    DBConnect.Dispose(conn);
+                    return req.CreateResponse(HttpStatusCode.OK, "User has upvoted this song (NEW)");
+                }
+                catch (Exception e)
+                {
+                    return req.CreateErrorResponse(HttpStatusCode.NotFound, "An error has occured  " + e.Message);
+                }
+                
             }
 
         }
@@ -362,7 +370,7 @@ namespace GildtAPI.Functions
                     {
                         cmd4.ExecuteReader();
                         DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.Accepted, "User has now a downvote for this song");
+                        return req.CreateResponse(HttpStatusCode.OK, "User has now a downvote for this song");
 
                     }
 

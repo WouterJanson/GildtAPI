@@ -1,0 +1,68 @@
+﻿test_name: upvote/downvote
+
+stages:
+  - name: Upvote a song which is upvoted already
+    request:
+      url: http://localhost:7071/api/SongRequest/1/7/upvote
+      method: POST
+    response:
+      status_code: 400
+
+stages:
+  - name: downvote a song which is downvoted already
+    request:
+      url: http://localhost:7071/api/SongRequest/1/7/downvote
+      method: POST
+    response:
+      status_code: 400
+      
+  - name: non existing requestId
+    request:
+      url: http://localhost:7071/api/SongRequest/12222/7/downvote
+      method: POST
+    response:
+      status_code: 404
+      
+  - name: non existing UserId
+    request:
+      url: http://localhost:7071/api/SongRequest/1/733/downvote
+      method: POST
+    response:
+      status_code: 404
+      
+  - name: Invalid Input on requestID
+    request:
+      url: http://localhost:7071/api/SongRequest/D/7/downvote
+      method: POST
+    response:
+      status_code: 400
+
+  - name: Invalid Input on TagId
+    request:
+      url: http://localhost:7071/api/SongRequest/1/L/downvote
+      method: POST
+    response:
+      status_code: 400
+      
+  - name: downvote song with no downvotes on it
+    request:
+      url: http://localhost:7071/api/SongRequest/6/1/downvote
+      method: POST
+    response:
+      status_code: 200 
+
+  - name: upvote song with no votes on it
+    request:
+      url: http://localhost:7071/api/SongRequest/12/1/upvote
+      method: POST
+    response:
+      status_code: 200       
+      
+      
+      
+      
+      
+      
+      
+      
+      
