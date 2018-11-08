@@ -168,8 +168,8 @@ namespace GildtAPI.Functions
         }
 
 
-        [FunctionName("RegisterUser")]
-        public static async Task<HttpResponseMessage> RegisterUser(
+        [FunctionName("AddUser")]
+        public static async Task<HttpResponseMessage> AddUser(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Users/Register")] HttpRequestMessage req,
             ILogger log)
         {
