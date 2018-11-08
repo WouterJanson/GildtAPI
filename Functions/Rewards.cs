@@ -23,7 +23,7 @@ namespace GildtAPI.Functions
         #region Functions
 
         [FunctionName("GetAllRewards")]
-        public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Function, "get", 
+        public static async Task<IActionResult> GetAllRewards([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
             Route = nameof(Rewards) + "/All")] HttpRequest req, ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetAllRewards));
@@ -43,7 +43,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
-        public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Function, "get", 
+        public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
             Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log, 
             string userId)
         {
@@ -72,7 +72,7 @@ namespace GildtAPI.Functions
         }
         
         [FunctionName(nameof(Rewards) + "-" + nameof(GetSingleReward))]
-        public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Function, "get", 
+        public static async Task<IActionResult> GetSingleReward([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
             Route = "Rewards")] HttpRequest req, ILogger log){
 
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetSingleReward));
@@ -117,7 +117,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName(nameof(Rewards) + "-" + nameof(CreateReward))]
-        public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Admin, "post", 
+        public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Anonymous, "post", 
             Route = "Rewards/Create")] HttpRequest req, ILogger log){
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateReward)}");
             // Read data from input
@@ -146,7 +146,7 @@ namespace GildtAPI.Functions
         }
         
         [FunctionName( nameof(Rewards) + "-" + nameof(DeleteReward))]
-        public static async Task<IActionResult> DeleteReward([HttpTrigger(AuthorizationLevel.Admin, "delete", 
+        public static async Task<IActionResult> DeleteReward([HttpTrigger(AuthorizationLevel.Anonymous, "delete", 
             Route = "Rewards/{rewardId}/Delete")] HttpRequest req, ILogger log,
             int rewardId)
         {
@@ -191,7 +191,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName(nameof(Rewards) + "-" + nameof(EditReward))]
-        public static async Task<IActionResult> EditReward([HttpTrigger(AuthorizationLevel.Admin, "put", 
+        public static async Task<IActionResult> EditReward([HttpTrigger(AuthorizationLevel.Anonymous, "put", 
             Route = "Rewards/{rewardId}/Edit")] HttpRequest req, ILogger log, 
             int rewardId)
         {

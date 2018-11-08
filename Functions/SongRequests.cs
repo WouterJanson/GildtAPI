@@ -23,7 +23,7 @@ namespace GildtAPI.Functions
     {
         [FunctionName("SongRequest")]
         public static async Task<IActionResult> GetSongRequests(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "SongRequest/{id?}")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest/{id?}")]HttpRequest req,
             ILogger log, string id)
         {
             List<SongRequest> AllRequests = new List<SongRequest>();
@@ -104,7 +104,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteSongRequest")]
         public static async Task<IActionResult> DeleteSongRequest(
-            [HttpTrigger(AuthorizationLevel.Function, "Delete", Route = "SongRequest/{id}/")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "Delete", Route = "SongRequest/{id}/")]
             HttpRequest req,
             ILogger log, string id)
         {
@@ -145,7 +145,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("AddSongRequest")]
         public static async Task<HttpResponseMessage> AddSongRequest(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "SongRequest/Add")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/Add")]
             HttpRequestMessage req,
             ILogger log)
         {
@@ -228,7 +228,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("UpVotesSongRequest")]
         public static async Task<HttpResponseMessage> UpvoteSongRequest(
-           [HttpTrigger(AuthorizationLevel.Function, "post", Route = "SongRequest/{RequestId}/{UserId}/upvote")]
+           [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/{RequestId}/{UserId}/upvote")]
             HttpRequestMessage req, string RequestId, string UserId,
            ILogger log)
         {
@@ -308,7 +308,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DownVotesSongRequest")]
         public static async Task<HttpResponseMessage> DownvotesSongRequest(
-              [HttpTrigger(AuthorizationLevel.Function, "post", Route = "SongRequest/{RequestId}/{UserId}/downvote")]
+              [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/{RequestId}/{UserId}/downvote")]
             HttpRequestMessage req, string RequestId, string UserId,
               ILogger log)
         {

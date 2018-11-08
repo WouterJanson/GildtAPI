@@ -123,7 +123,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteUser")]
         public static async Task<IActionResult> DeleteUser(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Users/{id?}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
             string qUsername = req.Query["username"];
@@ -170,7 +170,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("RegisterUser")]
         public static async Task<HttpResponseMessage> RegisterUser(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Users/Register")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Users/Register")] HttpRequestMessage req,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
@@ -236,7 +236,7 @@ namespace GildtAPI.Functions
     
         [FunctionName("EditUser")]
         public static async Task<HttpResponseMessage> EditUser(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route= "Users/{id}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route= "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;

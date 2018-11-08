@@ -22,7 +22,7 @@ namespace GildtAPI.Functions
     {
         [FunctionName("Events")]
         public static async Task<IActionResult> GetEvents(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Events/{id?}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
             List<Event> events = new List<Event>();
@@ -141,7 +141,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteEvent")]
         public static async Task<IActionResult> DeleteEvent(
-           [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Events/Delete/{id}")] HttpRequest req,
+           [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Delete/{id}")] HttpRequest req,
            ILogger log, string id)
         {
             //queries
@@ -176,7 +176,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("AddEvent")]
         public static async Task<HttpResponseMessage> AddEvent(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Add")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Add")] HttpRequestMessage req,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
@@ -255,7 +255,7 @@ namespace GildtAPI.Functions
 
         [FunctionName(nameof(EditEvent))]
         public static async Task<HttpResponseMessage> EditEvent(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Events/Edit/{id}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Edit/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
 
@@ -316,7 +316,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("CreateTag")]
         public static async Task<HttpResponseMessage> CreateTag(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Create")] HttpRequestMessage req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Create")] HttpRequestMessage req,
         ILogger log)
         {
             List<string> missingFields = new List<string>();
@@ -375,7 +375,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("AddTags")]
         public static async Task<HttpResponseMessage> AddTags(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
             string eventId = Eventid;
@@ -470,7 +470,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteTags")]
         public static async Task<IActionResult> DeleteTags(
-        [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequest req,
         ILogger log, string id)
         {
             var sqlStr = $"DELETE Tags WHERE Id = '{id}'";
@@ -504,7 +504,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("EditTags")]
         public static async Task<HttpResponseMessage> EditCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;

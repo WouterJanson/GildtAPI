@@ -16,7 +16,7 @@ namespace GildtAPI.Functions
     public static class AttendanceVerification
     {
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(GetVerifications))]
-        public static async Task<IActionResult> GetVerifications([HttpTrigger(AuthorizationLevel.Function, "get",
+        public static async Task<IActionResult> GetVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
             Route = "Attendance/{eventId?}")] HttpRequest req, ILogger log,
             int? eventId)
         {
@@ -79,7 +79,7 @@ namespace GildtAPI.Functions
             return new OkObjectResult(jAttendance);
         }
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(Verify))]
-        public static async Task<IActionResult> Verify([HttpTrigger(AuthorizationLevel.Function, "post",
+        public static async Task<IActionResult> Verify([HttpTrigger(AuthorizationLevel.Anonymous, "post",
             Route = "Attendance/{eventId}/Verify/{userId}")] HttpRequest req, ILogger log,
             int userId, int eventId)
         {
@@ -122,7 +122,7 @@ namespace GildtAPI.Functions
         }
 
 /*        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(CheckVerifications))]
-        public static async Task<IActionResult> CheckVerifications([HttpTrigger(AuthorizationLevel.Function, "get",
+        public static async Task<IActionResult> CheckVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
             Route = "Attendance/{eventId?}")] HttpRequest req, ILogger log,
             int? eventId)
         {
@@ -186,7 +186,7 @@ namespace GildtAPI.Functions
         }
         */
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(DeleteVerification))]
-        public static async Task<IActionResult> DeleteVerification([HttpTrigger(AuthorizationLevel.Function, "delete",
+        public static async Task<IActionResult> DeleteVerification([HttpTrigger(AuthorizationLevel.Anonymous, "delete",
             Route = "Attendance/{eventId}/Delete/{userId}")] HttpRequest req, ILogger log,
             int userId, int eventId){
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteVerification)}");

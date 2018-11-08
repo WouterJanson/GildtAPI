@@ -22,7 +22,7 @@ namespace GildtAPI.Functions
     {
         [FunctionName("Coupons")]
         public static async Task<IActionResult> GetCoupons(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Coupons/{id?}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
             List<Coupon> couponsList = new List<Coupon>();
@@ -83,7 +83,7 @@ namespace GildtAPI.Functions
 
        [FunctionName("AddCoupon")]
         public static async Task<HttpResponseMessage> AddCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons")] HttpRequestMessage req,
             ILogger log)
         {
             List<string> missingFields = new List<string>();
@@ -168,7 +168,7 @@ namespace GildtAPI.Functions
        
         [FunctionName("DeleteCoupons")]
         public static async Task<IActionResult> DeleteCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Coupons/{id?}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Coupons/{id?}")] HttpRequest req,
             ILogger log, string id)
         {
             string qName = req.Query["name"];
@@ -216,7 +216,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("EditCoupon")]
         public static async Task<HttpResponseMessage> EditCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
             ILogger log, string id)
             {
                 NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
@@ -269,7 +269,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("SignupCoupon")]
         public static async Task<IActionResult> SignupCoupon(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Coupons/{id}/Signup")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons/{id}/Signup")] HttpRequest req,
             ILogger log, string id)
         {
             string user = req.Query["UserId"];
