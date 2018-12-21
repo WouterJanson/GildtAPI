@@ -53,7 +53,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id?}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            if (!checkValidId(id))
+            if (!GlobalFunctions.checkValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
