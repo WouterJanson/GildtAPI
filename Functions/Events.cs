@@ -15,6 +15,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
 using System.Text.RegularExpressions;
+using GildtAPI.Controllers;
 
 namespace GildtAPI.Functions
 {
@@ -22,115 +23,10 @@ namespace GildtAPI.Functions
     {
         [FunctionName("Events")]
         public static async Task<IActionResult> GetEvents(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events/{id?}")] HttpRequest req,
-            ILogger log, string id)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequest req,
+            ILogger log)
         {
-            List<Event> events = new List<Event>();
-
-            string qCount = req.Query["count"];
-            if (qCount == null)
-            {
-                qCount = "20";
-            }
-
-            // error handling for if input is valid
-            if (id != null)
-            {
-                //check if id is numeric, if it is a number it will give back true if not false
-                if (Regex.IsMatch(id, @"^\d+$") == false)
-                {
-                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric and not negative");
-                }
-            }
-            
-            // get all events
-            var sqlStr = $"SELECT TOP {qCount} Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
-                $"LEFT JOIN (SELECT EventsTags.EventsId, Tags.Name AS Tag, Tags.Id AS TagId FROM EventsTags " +
-                $"LEFT JOIN Tags ON EventsTags.TagsId = Tags.Id) as tags ON Events.Id = tags.EventsId";
-            var sqlWhere = $" WHERE Events.Id = {id}";
-            var sqlOrder = " ORDER BY Events.Id";
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            // Checks if the id parameter is filled in
-            if (id != null)
-            {
-                // if ID is specified in the request, add a where clasule to the query
-                sqlStr = sqlStr + sqlWhere;
-
-                    // check if event exist if not throw a status 404 event not found
-                    using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                    {
-                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-                        if (reader.HasRows == false)
-                        {
-                            return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
-                        }
-                        reader.Close();
-                    }
-            }
-            else
-            {
-                sqlStr = sqlStr + sqlOrder;
-            }
-            
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-                Event currentEvent = null;
-                List<Tag> currentEventTagsList = new List<Tag>();
-
-                while (reader.Read())
-                {
-                    Event newEvent = new Event()
-                    {
-                        //read event
-                        Id = Convert.ToInt32(reader["EventId"]),
-                        Name = reader["Name"].ToString(),
-                        StartDate = DateTime.Parse(reader["StartDate"].ToString()),
-                        EndDate = DateTime.Parse(reader["EndDate"].ToString()),
-                        Image = reader["Image"].ToString(),
-                        Location = reader["location"].ToString(),
-                        IsActive = (bool)reader["IsActive"],
-                        ShortDescription = reader["ShortDescription"].ToString(),
-                        LongDescription = reader["LongDescription"].ToString()
-                    };
-
-                    //check if it is the first event from the reader
-                    if (currentEvent == null)
-                    {                        
-                        currentEvent = newEvent;
-                    }
-
-                    // check if reader got a new event
-                    if (currentEvent.Id != newEvent.Id)
-                    {
-                        currentEvent.Tags = currentEventTagsList.ToArray(); //sla alle tags in de list van "currentEventTags" op in current event.tags zodra een nieuwe event binnenkomt.                       
-                                               
-                        events.Add(currentEvent); //add the event with its tags to the events list                       
-                        currentEvent = newEvent; // the new event will now be current event
-
-                        currentEventTagsList = new List<Tag>(); // make a new empty list of "currentEventTags" when a new event has been read
-                    }
-
-                    //read the TagId + TagName of the corresponding Event
-                    int tagId = Convert.ToInt32(reader["TagId"]);                  
-                    string tagName = reader["Tag"].ToString();
-
-                    //Add tag to current event tags List
-                    currentEventTagsList.Add(new Tag(tagId, tagName));
-                }
-
-                //add the last event from the reader 
-                currentEvent.Tags = currentEventTagsList.ToArray();
-                events.Add(currentEvent);
-                reader.Close();
-            }
-
-            DBConnect.Dispose(conn);
+            List<Event> events = await EventController.Instance.GetAll();
 
             string j = JsonConvert.SerializeObject(events);
 
@@ -138,6 +34,31 @@ namespace GildtAPI.Functions
                 ? (ActionResult)new OkObjectResult(j)
                 : new NotFoundObjectResult("No events where found");
         }
+
+
+        [FunctionName("GetEvent")]
+        public static async Task<HttpResponseMessage> GetEvent(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events/{id}")] HttpRequestMessage req,
+         ILogger log, string id)
+        {
+            // Check if id is valid
+            if (!GlobalFunctions.checkValidId(id))
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
+            }
+
+            Event evenT = await EventController.Instance.Get(Convert.ToInt32(id));
+
+            // check if a event is found by given id, if not than give a 404 not found
+            if (evenT == null)
+            {
+                return req.CreateResponse(HttpStatusCode.NotFound, "Invalid Id - Event does not exist", "application/json");
+            }
+
+            return req.CreateResponse(HttpStatusCode.OK, evenT, "application/json");
+
+        }
+
 
         [FunctionName("DeleteEvent")]
         public static async Task<IActionResult> DeleteEvent(
@@ -467,6 +388,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
             }               
         }
+
 
         [FunctionName("DeleteTags")]
         public static async Task<IActionResult> DeleteTags(
