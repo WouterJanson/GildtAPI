@@ -1,39 +1,45 @@
 using System;
-using System.Data.SqlClient;
-using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Net;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
+using System.Collections.Specialized;
+using System.Data.SqlClient;
+using System.Net;
+using System.Linq;
 using GildtAPI.Model;
+using GildtAPI.Controllers;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GildtAPI.Functions
 {
     public static class SongRequests
     {
+        [FunctionName("SongRequests")]
+        public static async Task<HttpResponseMessage> GetSongRequests(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest")]HttpRequestMessage req,
+            ILogger log)
+        {
+
+            List<SongRequest> songRequests = await SongRequestController.Instance.GetAll();
+            string json = JsonConvert.SerializeObject(songRequests);
+
+            return songRequests.Count >= 1
+                ? req.CreateResponse(HttpStatusCode.OK, songRequests, "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+
+        }
         [FunctionName("SongRequest")]
-        public static async Task<IActionResult> GetSongRequests(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest/{id?}")]HttpRequest req,
+        public static async Task<HttpResponseMessage> GetSongRequest(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest/{id}")]HttpRequestMessage req,
             ILogger log, string id)
         {
-            List<SongRequest> AllRequests = new List<SongRequest>();
-            string qCount = req.Query["count"];
-            if (qCount == null)
-            {
-                qCount = "20";
-            }
 
-
+            //List<SongRequest> songRequests = await SongRequestController.Instance.GetAll();
 
             try
             {
@@ -41,65 +47,18 @@ namespace GildtAPI.Functions
             }
             catch
             {
-                return new BadRequestObjectResult("Invalid input");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
             }
 
+     
+            SongRequest songRequests = await SongRequestController.Instance.Get(Convert.ToInt32(id));
 
-
-            var sqlAllRequests =
-                $"SELECT TOP {qCount} sr.Id AS RequestId,sr.DateTime ,sr.UserId, sr.Title, sr.Artist," +
-                " CASE WHEN uv.Upvotes IS NULL THEN 0 ELSE uv.Upvotes END as Upvotes, CASE WHEN dv.Downvotes IS NULL THEN 0 ELSE dv.Downvotes END as Downvotes " +
-                "FROM SongRequest AS sr " +
-                "LEFT JOIN( " +
-                "SELECT d.RequestId AS RequestID, COUNT(UserId) AS Downvotes FROM SongRequestUserVotes AS d WHERE d.Vote< 0 GROUP BY " +
-                "d.RequestId, d.Vote) as dv ON dv.RequestID = sr.Id " +
-                "LEFT JOIN( " +
-                "SELECT u.RequestId AS RequestID, COUNT(UserId) AS Upvotes FROM SongRequestUserVotes AS u WHERE u.Vote > 0 GROUP BY " +
-                "u.RequestId, u.Vote ) as uv ON sr.Id = uv.RequestID ";
-
-            var sqlWhere = $" WHERE sr.Id = {id}";
-
-
-
-            //controleren op {id} Als het bestaat Add where op query
-            if (id != null)
+            if (songRequests == null)
             {
-                sqlAllRequests = sqlAllRequests + sqlWhere;
+                return req.CreateResponse(HttpStatusCode.NotFound, "Event does not exist");
             }
 
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlAllRequests, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-                while (reader.Read())
-                {
-
-                    AllRequests.Add(new Model.SongRequest()
-                    {
-                        Id = Convert.ToInt32(reader["RequestId"]),
-                        Title = reader["Title"].ToString(),
-                        Artist = reader["Artist"].ToString(),
-                        DateTime = DateTime.Parse(reader["DateTime"].ToString()),
-                        UserId = Convert.ToInt32(reader["UserId"]),
-                        Upvotes = Convert.ToInt32(reader["Upvotes"]),
-                        Downvotes = Convert.ToInt32(reader["Downvotes"])
-                    }
-                    );
-
-                }
-            }
-
-            DBConnect.Dispose(conn);
-            string j = JsonConvert.SerializeObject(AllRequests);
-
-            return AllRequests.Count > 0
-                // groter dan 0 dus 1 of meer requests return json met values
-                ? (ActionResult)new OkObjectResult(j)
-                // en anders 404 niet gevonden
-                : new NotFoundObjectResult("No songs were found");
+            return req.CreateResponse(HttpStatusCode.OK, songRequests);
         }
 
         [FunctionName("DeleteSongRequest")]
