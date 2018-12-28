@@ -44,98 +44,80 @@ namespace GildtAPI.Functions
             // Check if id is valid
             if (!GlobalFunctions.checkValidId(id))
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
             }
 
-            Event evenT = await EventController.Instance.Get(Convert.ToInt32(id));
+            Event evenT = await EventController.Instance.GetEvent(Convert.ToInt32(id));
 
             // check if a event is found by given id, if not than give a 404 not found
             if (evenT == null)
             {
-                return req.CreateResponse(HttpStatusCode.NotFound, "Invalid Id - Event does not exist", "application/json");
+                return req.CreateResponse(HttpStatusCode.NotFound, "Invalid Id - Event does not exist");
             }
 
-            return req.CreateResponse(HttpStatusCode.OK, evenT, "application/json");
+            return req.CreateResponse(HttpStatusCode.OK, evenT);
 
         }
 
 
         [FunctionName("DeleteEvent")]
-        public static async Task<IActionResult> DeleteEvent(
-           [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Delete/{id}")] HttpRequest req,
+        public static async Task<HttpResponseMessage> DeleteEvent(
+           [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Delete/{id}")] HttpRequestMessage req,
            ILogger log, string id)
         {
-            //queries
-            var sqlStr = $"DELETE Events WHERE Id = '{id}'";
 
-            // error handling for if input is valid
-            if (id != null)
+            if (!GlobalFunctions.checkValidId(id))
             {
-                //check if id is numeric, if it is a number it will give back true if not false
-                if (Regex.IsMatch(id, @"^\d+$") == false)
-                {
-                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric and not negative");
-                }
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
             }
 
-            SqlConnection conn = DBConnect.GetConnection();
-           
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {               
-                int rowsaffect = await cmd.ExecuteNonQueryAsync();
+            int rowsAffected = await EventController.Instance.DeleteEvent(Convert.ToInt32(id));
 
-                //check if the query has affected any rows if not than the given EventId does not exist
-                if (rowsaffect > 0)
-                {
-                    DBConnect.Dispose(conn);
-                    return (ActionResult)new OkObjectResult("Sucessfully deleted the event");
-                }
+            if (rowsAffected > 0)
+            {
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the event.");
+            }
+            else
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the event, event might not exist.");
+            }
 
-                return (ActionResult)new NotFoundObjectResult("Invalid input, event does not exist");
-            }              
         }
+
 
         [FunctionName("AddEvent")]
         public static async Task<HttpResponseMessage> AddEvent(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Add")] HttpRequestMessage req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            //log.LogInformation("C# HTTP trigger function processed a request.");
             List<string> missingFields = new List<string>();
+            Event evenT = new Event();
 
             // Read data from input
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string title = formData["title"];
-            string location = formData["location"];
-
-            string dateTimeStart = (formData["dateTimeStart"]);
-            string dateTimeEnd = (formData["dateTimeEnd"]);
-
-            string shortdescription = formData["shortdescription"];
-            string longdescription = formData["longdescription"];
-
-            string image = formData["image"];
-
-            // Queries
-            var sqlStr =
-            $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{title}', '{location}', '{dateTimeStart}', '{dateTimeEnd}', '{shortdescription}', '{longdescription}', '{image}', 'false')";
-
-            var sqlCheckEventStr = $"SELECT id, Name, Location, StartDate, EndDate FROM Events WHERE name = '{title}' AND StartDate = '{dateTimeStart}' AND EndDate = '{dateTimeEnd}'";
+            evenT.Name = formData["title"];
+            evenT.Location = formData["location"];
+            evenT.StartDate = DateTime.Parse(formData["dateTimeStart"]);
+            evenT.EndDate = DateTime.Parse(formData["dateTimeEnd"]);
+            evenT.ShortDescription = formData["shortdescription"];
+            evenT.LongDescription = formData["longdescription"];
+            evenT.Image = formData["image"];
 
             //Checks if the input fields are filled in
-            if (title == null)
+            if (evenT.Name == null)
             {
                 missingFields.Add("Event Name");
             }
-            if (location == null)
+            if (evenT.Location == null)
             {
                 missingFields.Add("Location");
             }
-            if (dateTimeStart == null)
+            if (evenT.StartDate == null)
             {
                 missingFields.Add("DateTime Start");
             }
-            if (dateTimeEnd == null)
+            if (evenT.EndDate == null)
             {
                 missingFields.Add("DateTime End");
             }
@@ -147,30 +129,21 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
 
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            int status = await EventController.Instance.CreateEvent(evenT);
 
-            using (SqlCommand cmd2 = new SqlCommand(sqlCheckEventStr, conn))
+            if (status == 400)
             {
-                SqlDataReader reader = await cmd2.ExecuteReaderAsync();
-                // check if event already exist, check if name+startDate+EndDate combination already exist in the database, if it already exist give it a status 400
-                if (reader.HasRows == true)
-                {
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Event already exist");
-                }
-
-                reader.Close();
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Event already exist");
+            }
+            else if (status > 0)
+            {
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully created event.");
+            }
+            else
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed.");
             }
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-            // if everything is fine give back a status 200
-            return req.CreateResponse(HttpStatusCode.OK, "Successfully added the event");
         }
 
 

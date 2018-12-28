@@ -11,13 +11,22 @@ namespace GildtAPI.Controllers
     {
         public async Task<List<Event>> GetAll()
         {
-            return await EventDAO.Instance.GetAll();
+            return await EventDAO.Instance.GetAllEvents();
         }
 
-        public async Task<Event> Get(int id)
+        public async Task<Event> GetEvent(int id)
         {
-            return await EventDAO.Instance.Get(id);
+            return await EventDAO.Instance.GetTheEvent(id);
         }
 
+        public async Task<int> DeleteEvent(int id)
+        {
+            return await EventDAO.Instance.DeleteEvent(id);
+        }
+
+        public async Task<int> CreateEvent(Event evenT)
+        {
+            return await EventDAO.Instance.AddEvent(evenT);
+        }
     }
 }

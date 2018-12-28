@@ -12,7 +12,7 @@ namespace GildtAPI.DAO
     {
         private static List<Event> events = new List<Event>();
 
-        public async Task<List<Event>> GetAll()
+        public async Task<List<Event>> GetAllEvents()
         {
             // get all events Query
             var sqlStr = $"SELECT Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
@@ -61,8 +61,10 @@ namespace GildtAPI.DAO
                         currentEventTagsList = new List<Tag>(); // make a new empty list of "currentEventTags" when a new event has been read
                     }
 
-                    //read the TagId + TagName of the corresponding Event
-                    int tagId = Convert.ToInt32(reader["TagId"]);
+                    //check if event has tag if not give a 0
+                    int tagId = 0;
+                    int.TryParse(reader["TagId"].ToString(), out tagId);
+
                     string tagName = reader["Tag"].ToString();
 
                     //Add tag to current event tags List
@@ -80,11 +82,10 @@ namespace GildtAPI.DAO
             return events;
         }
 
-
         // Get single user
-        public async Task<Event> Get(int id)
+        public async Task<Event> GetTheEvent(int id)
         {
-            List<Event> eventslist = await GetAll();
+            List<Event> eventslist = await GetAllEvents();
 
             foreach (Event evenT in eventslist)
             {
@@ -99,5 +100,56 @@ namespace GildtAPI.DAO
             return null;
         }
 
+        public async Task<int> DeleteEvent(int id)
+        {
+            //queries
+            var sqlStr = $"DELETE Events WHERE Id = '{id}'";
+            int rowsAffected;
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            DBConnect.Dispose(conn);
+
+            return rowsAffected;
+        }
+
+        public async Task<int> AddEvent(Event evenT)
+        {
+            int EventAlreadyExist = 400;
+            int RowsAffected;
+
+            List<Event> eventsList = await GetAllEvents();
+
+            //check if event already exist
+            foreach (Event e in eventsList)
+            {
+                if (e.Name == evenT.Name && e.StartDate == evenT.StartDate)
+                {
+                    return EventAlreadyExist;
+                }
+            }
+
+            // Queries
+            var sqlStr =
+            $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{evenT.Name}', '{evenT.Location}', '{evenT.StartDate}', '{evenT.EndDate}', '{evenT.ShortDescription}', '{evenT.LongDescription}', '{evenT.Image}', 'false')";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
+            {
+                RowsAffected = await cmd2.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+
+            return RowsAffected;
+        }
     }
 }
