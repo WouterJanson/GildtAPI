@@ -44,7 +44,7 @@ namespace GildtAPI.Functions
             // Check if id is valid
             if (!GlobalFunctions.checkValidId(id))
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters");
             }
 
             Event evenT = await EventController.Instance.GetEvent(Convert.ToInt32(id));
@@ -52,7 +52,7 @@ namespace GildtAPI.Functions
             // check if a event is found by given id, if not than give a 404 not found
             if (evenT == null)
             {
-                return req.CreateResponse(HttpStatusCode.NotFound, "Invalid Id - Event does not exist");
+                return req.CreateResponse(HttpStatusCode.NotFound, "Event could not be found by the given ID");
             }
 
             return req.CreateResponse(HttpStatusCode.OK, evenT);
@@ -90,7 +90,6 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Add")] HttpRequestMessage req,
             ILogger log)
         {
-            //log.LogInformation("C# HTTP trigger function processed a request.");
             List<string> missingFields = new List<string>();
             Event evenT = new Event();
 
@@ -104,7 +103,7 @@ namespace GildtAPI.Functions
             evenT.LongDescription = formData["longdescription"];
             evenT.Image = formData["image"];
 
-            //Checks if the input fields are filled in
+            //Checks if the required input fields are filled in <<-- kan dit in een methode ?
             if (evenT.Name == null)
             {
                 missingFields.Add("Event Name");
@@ -139,7 +138,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created event.");
             }
-            else
+            else // is dit niet overbodig zoek uit
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed.");
             }
@@ -147,36 +146,22 @@ namespace GildtAPI.Functions
         }
 
 
-        [FunctionName(nameof(EditEvent))]
+        [FunctionName("EditEvent")]
         public static async Task<HttpResponseMessage> EditEvent(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Edit/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-
             // Read data from input
+            Event evenT = new Event();
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string title = formData["title"];
-            string location = formData["location"];
-
-            string dateTimeStartString = formData["dateTimeStart"];
-            string dateTimeEndString = formData["dateTimeEnd"];
-            string isActiveString = formData["isactive"];
-            string shortdescription = formData["shortdescription"];
-            string longdescription = formData["longdescription"];
-            string image = formData["image"];
-
-            //queries
-
-            var sqlStr = $"UPDATE Events SET " +
-                $"Name = COALESCE({(title == null ? "NULL" : $"\'{title}\'")}, Name), " +
-                $"Location = COALESCE({(location == null ? "NULL" : $"\'{location}\'")}, Location), " +
-                $"StartDate = COALESCE({(dateTimeStartString == null ? "NULL" : $"\'{dateTimeStartString}\'")}, StartDate), " +
-                $"EndDate = COALESCE({(dateTimeEndString == null ? "NULL" : $"\'{dateTimeEndString}\'")}, EndDate), " +
-                $"ShortDescription = COALESCE({(shortdescription == null ? "NULL" : $"\'{shortdescription}\'")}, ShortDescription), " +
-                $"LongDescription = COALESCE({(longdescription == null ? "NULL" : $"\'{longdescription}\'")}, LongDescription), " +
-                $"Image = COALESCE({(image == null ? "NULL" : $"\'{location}\'")}, image), " +
-                $"IsActive = COALESCE({(isActiveString == null ? "NULL" : $"\'{isActiveString}\'")}, IsActive) " +
-                $" WHERE id = {id};";
+            evenT.Id = Convert.ToInt32(id);
+            evenT.Name = formData["title"];
+            evenT.Location = formData["location"];
+            evenT.StartDate = DateTime.Parse(formData["dateTimeStart"]);
+            evenT.EndDate = DateTime.Parse(formData["dateTimeEnd"]);
+            evenT.ShortDescription = formData["shortdescription"];
+            evenT.LongDescription = formData["longdescription"];
+            evenT.Image = formData["image"];
 
             if (id != null)
             {
@@ -187,22 +172,19 @@ namespace GildtAPI.Functions
                 }
             }
 
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            int EventStatus = await EventController.Instance.EditEvent(evenT);
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            if (EventStatus == 400)
             {
-                int rowsaffect = await cmd.ExecuteNonQueryAsync();
-
-                // check if rows in the database have been affected, if it went succefult than the given EventId exist
-                if (rowsaffect > 0)
-                {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.OK, "Sucessfully edited the event"); // status 200
-                }
-
-                return req.CreateResponse(HttpStatusCode.NotFound, "Invalid input, event does not exist"); // status 404
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Event does not exist");
+            }
+            else if (EventStatus > 0)
+            {
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the event.");
+            }
+            else // is dit niet overbodig zoek uit
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed.");
             }
 
         }
@@ -218,18 +200,12 @@ namespace GildtAPI.Functions
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string tag = formData["tag"];
 
-            // Queries
-            var sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
-            var sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
 
             //Checks if the input fields are filled in
             if (tag == "" || tag == null)
             {
                 missingFields.Add("Tag");
             }
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
 
             // Returns bad request if one of the input fields are not filled in
             if (missingFields.Any())
@@ -238,32 +214,20 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
 
-            // check if tag already exist in the database to avoid dublicate entries
-            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+            int status = await EventController.Instance.CreateTag(tag);
 
-            using (SqlDataReader reader = cmd2.ExecuteReader())
+            if (status == 400)
             {
-                
-                //check if tag already exist in the database
-                if (reader.HasRows)
-                {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Could not create tag, tag does already exist... this would create a dublicate tag");
-                }
-
-                reader.Close();
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not create tag, tag does already exist... this would create a dublicate tag");
             }
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            else if (status > 0)
             {
-                await cmd.ExecuteNonQueryAsync();
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully created Tag.");
             }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-            return req.CreateResponse(HttpStatusCode.OK, "Successfully created tag");
-
+            else // is dit niet overbodig zoek uit
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "creating Tag failed.");
+            }
         }
 
 
@@ -272,94 +236,42 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
-            string eventId = Eventid;
-            string tagId = TagId;
 
-            // Queries
-            var sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
-            // query to check if event even exist by checking the id
-            var sqlEventStr = $"SELECT Events.Id as EventId FROM Events WHERE Events.Id = {eventId}";
-            // querry to validate Tag (does it exist?)
-            var sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id ='{tagId}'";
-            // querry to check if the given tag is already assigned to a event
-            var SqlCheckIfAssigned = $"SELECT TagsId, EventsId FROM EventsTags WHERE TagsId = '{tagId}' AND EventsId = '{eventId}'";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            if (eventId != null)
+            // Check if Eventid is valid
+            if (!GlobalFunctions.checkValidId(Eventid))
             {
-                //check if id is numeric, if it is a number it will give back true if not false
-                if (Regex.IsMatch(eventId, @"^\d+$") == false)
-                {
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, EventId should be numeric and not negative"); // status 400
-                }
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId");
             }
 
-            if (tagId != null)
-            {                
-                if (Regex.IsMatch(tagId, @"^\d+$") == false)
-                {
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, TagId should be numeric and not negative"); 
-                }
+            // Check if TagId is valid
+            if (!GlobalFunctions.checkValidId(TagId))
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
             }
 
-            //check if given event exist
-            using (SqlCommand cmd = new SqlCommand(sqlEventStr, conn))
-            {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    // check if query has found an event by the given EventId
-                    if (reader.HasRows == false)
-                    {
-                        reader.Close();
-                        // Close the database connection
-                        DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.NotFound, "Event not found");
-                    }                    
-                }               
-            }
+            int status = await EventController.Instance.AddTag(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
-            //check if given tag exist
-            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+            //error handling 
+            if (status == 400)
             {
-                using (SqlDataReader reader2 = cmd2.ExecuteReader())
-                {
-                    // check if the query has found a tag with the given TagId
-                    if (reader2.HasRows == false)
-                    {
-                        reader2.Close();
-                        // Close the database connection
-                        DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.NotFound, "tag not found");                        
-                    }
-                }
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the event does not exist...");
             }
-
-            //check if a tag is already assigned to the event
-            using (SqlCommand cmd4 = new SqlCommand(SqlCheckIfAssigned, conn))
+            else if (status == 401)
             {
-                using (SqlDataReader reader4 = cmd4.ExecuteReader())
-                {
-                    // check if the query has found a tag with the given TagId
-                    if (reader4.HasRows == true)
-                    {
-                        reader4.Close();
-                        // Close the database connection
-                        DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.BadRequest, "tag is already assigned to the event");
-                    }
-                }
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag does not exist...");
             }
-
-            //execute operation if everything is OK
-            using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
+            else if (status == 402) 
             {
-                // insert in to the table EventsTags
-                await cmd3.ExecuteNonQueryAsync();
-                DBConnect.Dispose(conn);
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully added the taggs to the event");
-            }               
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag is already assigned to the specified Event...");
+            }
+            else if (status > 0)
+            {
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully added Tag the the Event!");
+            }
+            else // is dit niet overbodig zoek uit
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed.");
+            }
         }
 
 
