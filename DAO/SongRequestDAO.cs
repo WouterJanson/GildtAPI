@@ -11,6 +11,7 @@ namespace GildtAPI.DAO
 {
     class SongRequestDAO : Singleton<SongRequestDAO>
     {
+        // all songrequests
         private static List<SongRequest> songRequests = new List<SongRequest>();
 
         public async Task<List<SongRequest>> GetAll()
@@ -33,6 +34,7 @@ namespace GildtAPI.DAO
 
         }
 
+        //single songrequest 
         public async Task<SongRequest> Get(int id)
         {
             List<SongRequest> songRequestsList = await GetAll();
@@ -47,6 +49,46 @@ namespace GildtAPI.DAO
 
             return null;
         }
+
+        public async Task<int> Delete(int id)
+        {
+            int rowsAffected;
+            var sqlStr = $"DELETE SongRequest WHERE Id = '{id}'";
+            SqlConnection conn = DBConnect.GetConnection();
+            using (SqlCommand cmd = new SqlCommand(sqlStr,conn))
+            {
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+            return rowsAffected;
+        }
+
+        public async Task<int> Upvote(int RequestId, int UserId)
+        {
+            int i = 0;
+
+            return i;
+        }
+
+        public async Task<int> AddSongRequest(SongRequest song)
+        {
+            int rowsaffected;
+
+            var sqlStr =
+                $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
+                $"VALUES ('{song.Title}', '{song.Artist}', '{DateTime.UtcNow}', '{song.UserId}')";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                rowsaffected = await cmd.ExecuteNonQueryAsync();
+            }
+            return rowsaffected;
+
+
+            return rowsaffected;
+        }
+
 
         private async Task addSongRequestList(string sqlAllRequests, SqlConnection conn)
         {
@@ -71,5 +113,7 @@ namespace GildtAPI.DAO
                 reader.Close();
             }
         }
+
+        
     }
 }

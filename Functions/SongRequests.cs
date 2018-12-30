@@ -38,9 +38,28 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest/{id}")]HttpRequestMessage req,
             ILogger log, string id)
         {
+            try
+            {
+                int convId = Convert.ToInt32(id);
+            }
+            catch
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
+            }
+            SongRequest songRequests = await SongRequestController.Instance.Get(Convert.ToInt32(id));
+            if (songRequests == null)
+            {
+                return req.CreateResponse(HttpStatusCode.NotFound, "Songrequest does not exist");
+            }
+            return req.CreateResponse(HttpStatusCode.OK, songRequests);
+        }
 
-            //List<SongRequest> songRequests = await SongRequestController.Instance.GetAll();
-
+        [FunctionName("DeleteSongRequest")]
+        public static async Task<HttpResponseMessage> DeleteSongRequest(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "Delete", Route = "SongRequest/{id}/")]
+            HttpRequestMessage req,
+            ILogger log, string id)
+        {
             try
             {
                 int convId = Convert.ToInt32(id);
@@ -50,54 +69,12 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
             }
 
-     
-            SongRequest songRequests = await SongRequestController.Instance.Get(Convert.ToInt32(id));
-
-            if (songRequests == null)
+            int i = await SongRequestController.Instance.Delete(Convert.ToInt32(id));
+            if (i == 0)
             {
-                return req.CreateResponse(HttpStatusCode.NotFound, "Event does not exist");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Songrequest does not exist");
             }
-
-            return req.CreateResponse(HttpStatusCode.OK, songRequests);
-        }
-
-        [FunctionName("DeleteSongRequest")]
-        public static async Task<IActionResult> DeleteSongRequest(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "Delete", Route = "SongRequest/{id}/")]
-            HttpRequest req,
-            ILogger log, string id)
-        {
-
-       
-            var sqlStr = $"DELETE SongRequest WHERE Id = '{id}'";
-            SqlConnection conn = DBConnect.GetConnection();
-         
-
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-
-
-                try
-                {
-                    //wacht op query tot het is afgerond geef waarde aan affectedrows
-                    int affectedRows = await cmd.ExecuteNonQueryAsync();
-                    DBConnect.Dispose(conn);
-                    // controleren of er rows zijn aangepast in de database zo niet return 404
-                    if (affectedRows == 0)
-                    {
-                        return new NotFoundObjectResult(
-                            $"Deleting Songrequest failed: reward with id {id} does not exist!");
-                    }
-                    //rows aangepast return 200
-                    return (ActionResult)new OkObjectResult("Sucessfully deleted the Songrequest");
-                }
-                catch (Exception e)
-                {
-                    //return 400 als er een invalid object is > "jjjj"
-                    return new BadRequestObjectResult("invalid id " + e.Message);
-                }
-            }
+            return req.CreateResponse(HttpStatusCode.OK, "succesfully deleted songrequest");
 
 
         }
@@ -108,7 +85,15 @@ namespace GildtAPI.Functions
             HttpRequestMessage req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+
+            ////////////////////////////////////////////////
+            /// ////////////////////////////////////////
+            /// /////////////////////////////////////
+            ///     ////////////////
+            ///     ////////
+            /// TO DO
+            SongRequest song = new SongRequest();
+
             List<string> missingFields = new List<string>();
 
             // Read data from input
@@ -116,14 +101,6 @@ namespace GildtAPI.Functions
             string Title = formData["Title"];
             string Artist = formData["Artist"];
             string UserId = formData["UserId"];
-
-
-            // Queries vul database met  input
-            var sqlStr =
-                $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
-                $"VALUES ('{Title}', '{Artist}', '{DateTime.UtcNow}', '{UserId}')";
-
-
 
             //Checks if the input fields are filled in
             if (Title == null)
@@ -147,6 +124,7 @@ namespace GildtAPI.Functions
                 string missingFieldsSummary = String.Join(", ", missingFields);
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
             }
+
             //controleren of userId niet kleinder is als 0 of als input niet numeric zijn
             if (!int.TryParse(UserId, out int userId) || userId < 0)
             {
@@ -154,32 +132,11 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"UserId is not a valid number.");
             }
 
-
-            ////Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            int i = await SongRequestController.Instance.AddSongRequest(song);
+            if (i == 0)
             {
-                try
-                {
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
-                catch (Exception e)
-                {
-                    //bestaat gebruiker niet return 400
-                    DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Creating song request failed: User does not exist! " + e.Message);
-                }
-
+                return req.CreateResponse(HttpStatusCode.BadRequest, "oops something went wrong. try again.");
             }
-
-
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-            //bestaat gebruiker wel return 200
             return req.CreateResponse(HttpStatusCode.OK, "Successfully added the song request");
 
 
@@ -260,7 +217,7 @@ namespace GildtAPI.Functions
                 {
                     return req.CreateErrorResponse(HttpStatusCode.NotFound, "An error has occured  " + e.Message);
                 }
-                
+
             }
 
         }
@@ -339,7 +296,7 @@ namespace GildtAPI.Functions
                     }
 
                 }
-                
+
             }
 
 

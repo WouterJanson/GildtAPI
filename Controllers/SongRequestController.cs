@@ -31,5 +31,21 @@ namespace GildtAPI.Controllers
         {
             return await SongRequestDAO.Instance.Get(id);
         }
+
+        public async Task<int> Delete(int id)
+        {
+            return await SongRequestDAO.Instance.Delete(id);
+        }
+
+        public async Task<int> AddSongRequest(SongRequest song)
+        {
+            return await SongRequestDAO.Instance.AddSongRequest(song);
+
+        }
+
+        public async Task<int> UpVote(int RequestId, int UserId)
+        {
+            return await SongRequestDAO.Instance.Upvote(RequestId, UserId);
+        }
     }
 }
