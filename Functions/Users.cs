@@ -36,7 +36,7 @@ namespace GildtAPI.Functions
             ILogger log, string id)
         {
             // Check if id is valid
-            if (!GlobalFunctions.checkValidId(id))
+            if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
@@ -44,7 +44,6 @@ namespace GildtAPI.Functions
             User user = await UserController.Instance.Get(Convert.ToInt32(id));
 
             return req.CreateResponse(HttpStatusCode.OK, user, "application/json");
-
         }
 
 
@@ -53,21 +52,16 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id?}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            if (!GlobalFunctions.checkValidId(id))
+            if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
             int rowsAffected = await UserController.Instance.Delete(Convert.ToInt32(id));
 
-            if(rowsAffected > 0)
-            {
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the user.", "application/json");
-            }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the user.", "application/json");
-            }
+            return rowsAffected > 0
+                ? req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the user.", "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the user.", "application/json");
         }
 
 
@@ -85,37 +79,18 @@ namespace GildtAPI.Functions
             user.Email = formData["email"];
             user.Password = PasswordHasher.HashPassword(formData["password"]);
 
-            //Checks if the input fields are filled in
-            if (user.Username == null)
-            {
-                missingFields.Add("Username");
-            }
-            if (user.Email == null)
-            {
-                missingFields.Add("Email");
-            }
-            if (user.Password == null)
-            {
-                missingFields.Add("Password");
-            }
+            bool inputIsValid = GlobalFunctions.CheckInputs(user.Username, user.Email, user.Password);
 
-            // Returns bad request if one of the input fields are not filled in
-            if (missingFields.Any())
+            if(!inputIsValid)
             {
-                string missingFieldsSummary = String.Join(", ", missingFields);
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
             int rowsAffected = await UserController.Instance.Create(user);
 
-            if (rowsAffected > 0)
-            {
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully created the user.", "application/json");
-            }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Error creating the user.", "application/json");
-            }
+            return rowsAffected > 0
+                ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the user.", "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error creating the user.", "application/json");
         }
 
         [FunctionName("EditUser")]
@@ -133,14 +108,9 @@ namespace GildtAPI.Functions
 
             int rowsAffected = await UserController.Instance.Edit(user);
 
-            if(rowsAffected > 0)
-            {
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the user.", "application/json");
-            }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Error editing the user.", "application/json");
-            }
+            return rowsAffected > 0
+                ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the user.", "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error editing the user.", "application/json");
         }
     }
 }

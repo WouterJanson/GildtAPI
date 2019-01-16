@@ -12,7 +12,8 @@ namespace GildtAPI.DAO
         private static List<User> users = new List<User>();
         private static List<UsersCoupon> couponsList = new List<UsersCoupon>();
 
-        // Get all users
+        // Get all users 
+        // @TODO: I Think something is not right here...
         public async Task<List<User>> GetAll()
         {
             string sqlStrUsers = $"SELECT * FROM Users ";
@@ -64,7 +65,7 @@ namespace GildtAPI.DAO
 
         public async Task<int> Create(User user)
         {
-            var sqlStr =
+            string sqlStr =
             $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', '{user.Username}', '{user.Email}', '{user.Password}')";
             int rowsAffected;
 

@@ -42,7 +42,7 @@ namespace GildtAPI.Functions
          ILogger log, string id)
         {
             // Check if id is valid
-            if (!GlobalFunctions.checkValidId(id))
+            if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters");
             }
@@ -66,7 +66,7 @@ namespace GildtAPI.Functions
            ILogger log, string id)
         {
 
-            if (!GlobalFunctions.checkValidId(id))
+            if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
             }
@@ -238,13 +238,13 @@ namespace GildtAPI.Functions
         {
 
             // Check if Eventid is valid
-            if (!GlobalFunctions.checkValidId(Eventid))
+            if (!GlobalFunctions.CheckValidId(Eventid))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId");
             }
 
             // Check if TagId is valid
-            if (!GlobalFunctions.checkValidId(TagId))
+            if (!GlobalFunctions.CheckValidId(TagId))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
             }
