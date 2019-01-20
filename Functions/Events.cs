@@ -22,17 +22,18 @@ namespace GildtAPI.Functions
     public static class Events
     {
         [FunctionName("Events")]
-        public static async Task<IActionResult> GetEvents(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequest req,
+        public static async Task<HttpResponseMessage> GetEvents(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequestMessage req,
             ILogger log)
         {
             List<Event> events = await EventController.Instance.GetAll();
 
             string j = JsonConvert.SerializeObject(events);
 
-            return events != null
-                ? (ActionResult)new OkObjectResult(j)
-                : new NotFoundObjectResult("No events where found");
+            return events.Count >= 1
+                ? req.CreateResponse(HttpStatusCode.OK, events, "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+
         }
 
 
@@ -163,13 +164,10 @@ namespace GildtAPI.Functions
             evenT.LongDescription = formData["longdescription"];
             evenT.Image = formData["image"];
 
-            if (id != null)
+            //check if id is numeric, if it is a number it will give back true if not false
+            if (Regex.IsMatch(id, @"^\d+$") == false) 
             {
-                //check if id is numeric, if it is a number it will give back true if not false
-                if (Regex.IsMatch(id, @"^\d+$") == false) 
-                {
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, id should be numeric and not negative"); // status 400
-                }
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, id should be numeric and not negative"); // status 400
             }
 
             int EventStatus = await EventController.Instance.EditEvent(evenT);
