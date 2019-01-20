@@ -15,203 +15,89 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Linq;
 using GildtAPI.Model;
+using GildtAPI.Controllers;
 
 namespace GildtAPI.Functions
 {
     public static class Coupons
     {
-        [FunctionName("Coupons")]
-        public static async Task<IActionResult> GetCoupons(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons/{id?}")] HttpRequest req,
-            ILogger log, string id)
+        [FunctionName("GetAllCoupons")]
+        public static async Task<HttpResponseMessage> GetCoupons(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons")] HttpRequestMessage req,
+            ILogger log)
         {
-            List<Coupon> couponsList = new List<Coupon>();
+            List<Coupon> coupons = await CouponController.Instance.GetAll();
 
-            var sqlStr = $"SELECT * FROM Coupons";
-            var sqlWhere = $" WHERE Id = '{id}'";
-            
-            // Check if input is valid
-            try
-            {
-                if(id != null)
-                {
-                    int convId = Convert.ToInt32(id);
-                }
-            }
-            catch
-            {
-                return new BadRequestObjectResult("Invalid input");
-            }
+            string j = JsonConvert.SerializeObject(coupons);
 
-            if(id != null)
-            {
-                sqlStr = sqlStr + sqlWhere;
-            }
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-                while(reader.Read())
-                {
-                    couponsList.Add(
-                        new Coupon() {
-                            Id = Convert.ToInt32(reader["Id"]),
-                            Name = reader["Name"].ToString(),
-                            Description = reader["Description"].ToString(),
-                            StartDate = DateTime.Parse(reader["StartDate"].ToString()),
-                            EndDate = DateTime.Parse(reader["EndDate"].ToString()),
-                            Type = Convert.ToInt32(reader["Type"].ToString()),
-                            TotalUsed = Convert.ToInt32(reader["TotalUsed"]),
-                            Image = reader["Image"].ToString()
-                        }
-                    );
-                }
-                reader.Close();
-            }
-
-            DBConnect.Dispose(conn);
-            
-            string j = JsonConvert.SerializeObject(couponsList);
-
-            return couponsList.Count >= 1
-                ? (ActionResult)new OkObjectResult(j)
-                : new NotFoundObjectResult("No Coupons where found");
+            return coupons.Count >= 1
+                ? req.CreateResponse(HttpStatusCode.OK, coupons, "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
         }
 
-       [FunctionName("AddCoupon")]
+        [FunctionName("GetSingleCoupon")]
+        public static async Task<HttpResponseMessage> GetCoupon(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons/{id}")] HttpRequestMessage req,
+            ILogger log, string id)
+        {
+            // Check if id is valid
+            if (!GlobalFunctions.CheckValidId(id))
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
+            }
+
+            Coupon coupon = await CouponController.Instance.Get(Convert.ToInt32(id));
+
+            return req.CreateResponse(HttpStatusCode.OK, coupon, "application/json");
+        }
+
+        [FunctionName("AddCoupon")]
         public static async Task<HttpResponseMessage> AddCoupon(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons")] HttpRequestMessage req,
             ILogger log)
         {
             List<string> missingFields = new List<string>();
+            Coupon coupon = new Coupon();
 
             // Read data from input
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string name = formData["Name"];
-            string description = formData["Description"];
-            string startDate = formData["StartDate"];
-            string endDate = formData["EndDate"];
-            string type = formData["Type"];
-            string image = formData["Image"];
+            coupon.Name = formData["Name"];
+            coupon.Description = formData["Description"];
+            coupon.StartDate = Convert.ToDateTime(formData["StartDate"]);
+            coupon.EndDate = Convert.ToDateTime(formData["EndDate"]);
+            coupon.Type = Convert.ToInt32(formData["Type"]);
+            coupon.Image = formData["Image"];
 
-            var sqlStr =
-                $"INSERT INTO Coupons (Name, Description, StartDate, EndDate, Type, TotalUsed, Image) VALUES ('{name}', '{description}', '{startDate}', '{endDate}', '{type}', '0', '{image}')";
-            var sqlGet =
-                $"SELECT COUNT(*) FROM Coupons WHERE Name = '{name}'";
 
-            //Checks if the input fields are filled in
-            if (name == null)
+            bool inputIsValid = GlobalFunctions.CheckInputs(coupon.Name, coupon.Description, coupon.StartDate.ToString(), coupon.EndDate.ToString(), coupon.Type.ToString(), coupon.Image);
+
+            if(!inputIsValid)
             {
-                missingFields.Add("Name");
-            }
-            if (description == null)
-            {
-                missingFields.Add("Description");
-            }
-            if (startDate == null)
-            {
-                missingFields.Add("Start Date");
-            }
-            if (endDate == null)
-            {
-                missingFields.Add("End Date");
-            }
-            if (type == null)
-            {
-                missingFields.Add("Type");
-            }
-            if (image == null)
-            {
-                missingFields.Add("Image");
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
-            // Returns bad request if one of the input fields are not filled in
-            if (missingFields.Any())
-            {
-                string missingFieldsSummary = String.Join(", ", missingFields);
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
-            }
+            int rowsAffected = await CouponController.Instance.Create(coupon);
 
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            //Checks if the coupon is already registered
-            SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
-            checkCoupon.Parameters.AddWithValue("Name", name);
-            int CouponExist = (int)checkCoupon.ExecuteScalar();
-            if (CouponExist > 0)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "There is already a coupon registered with the same name");
-            }
-            else
-            {
-                try
-                {
-                     using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                    {
-                        await cmd.ExecuteNonQueryAsync();
-
-                        // Close the database connection
-                        DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.OK, "Successfully added the coupon");
-                    }
-                }
-                catch(Exception e)
-                {
-                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured");
-                }
-            }
+            return rowsAffected > 0
+                ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the coupon.", "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error creating the coupon.", "application/json");
         } 
        
         [FunctionName("DeleteCoupons")]
-        public static async Task<IActionResult> DeleteCoupon(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Coupons/{id?}")] HttpRequest req,
+        public static async Task<HttpResponseMessage> DeleteCoupon(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Coupons/{id?}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            string qName = req.Query["name"];
-            string sqlStrDelete;
-            if(id != null)
+            if (!GlobalFunctions.CheckValidId(id))
             {
-                sqlStrDelete = $"DELETE Coupons WHERE Id = '{id}'";
-            }
-            else
-            {
-                sqlStrDelete = $"DELETE Coupons WHERE Username = '{qName}'";
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            try
-            {
-                Convert.ToInt32(id);
-            }
-            catch
-            {
-                return new BadRequestObjectResult("Invalid input");
-            }
-            
+            int rowsAffected = await CouponController.Instance.Delete(Convert.ToInt32(id));
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            try
-            {
-                using(SqlCommand cmd = new SqlCommand(sqlStrDelete, conn))
-                {
-                   
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                    if(rowsAffected == 0)
-                    {
-                        return (ActionResult)new NotFoundObjectResult("No coupon where found");
-                    }
-                    DBConnect.Dispose(conn);
-                    return (ActionResult)new OkObjectResult("Sucessfully deleted the coupon");
-                }
-            }
-            catch(Exception e)
-            {
-                return (ActionResult)new NotFoundObjectResult(e);
-            }
+            return rowsAffected > 0
+                ? req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the coupon.", "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the coupon.", "application/json");
         }
 
         [FunctionName("EditCoupon")]
@@ -267,42 +153,42 @@ namespace GildtAPI.Functions
                 }
             }
 
-        [FunctionName("SignupCoupon")]
-        public static async Task<IActionResult> SignupCoupon(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons/{id}/Signup")] HttpRequest req,
-            ILogger log, string id)
-        {
-            string user = req.Query["UserId"];
-            if(user == null)
-            {
-                return (ActionResult)new BadRequestObjectResult("Missing query parameter UserId.");
-            }
+        //[FunctionName("SignupCoupon")]
+        //public static async Task<HttpResponseMessage> SignupCoupon(
+        //    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons/{couponId}/Signup/{userId}")] HttpRequestMessage req,
+        //    ILogger log, string couponId, string userId)
+        //{
+        //    // Check if id is valid
+        //    if (!GlobalFunctions.CheckValidId(userId) || !GlobalFunctions.CheckValidId(couponId))
+        //    {
+        //        return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
+        //    }
 
-            //Query
-            var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES ('{user}', '{id}')";
-            var sqlGet =
-                $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = '{id}' AND UserId = '{user}'";
+        //    //Query
+        //    var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES ('{userId}', '{couponId}')";
+        //    var sqlGet =
+        //        $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = '{couponId}' AND UserId = '{userId}'";
 
-            SqlConnection conn = DBConnect.GetConnection();
+        //    SqlConnection conn = DBConnect.GetConnection();
 
-            SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
-            checkCoupon.Parameters.AddWithValue("CouponId", id);
-            checkCoupon.Parameters.AddWithValue("UserId", user);
-            int CouponExist = (int)checkCoupon.ExecuteScalar();
-            if(CouponExist > 0)
-            {
-                return (ActionResult)new BadRequestObjectResult("This coupon is already registered by the user");
-            }
-            else
-            {
-                using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                {
-                    await cmd.ExecuteNonQueryAsync();
-                }
+        //    SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
+        //    checkCoupon.Parameters.AddWithValue("CouponId", couponId);
+        //    checkCoupon.Parameters.AddWithValue("UserId", userId);
+        //    int CouponExist = (int)checkCoupon.ExecuteScalar();
+        //    if(CouponExist > 0)
+        //    {
+        //        return (ActionResult)new BadRequestObjectResult("This coupon is already registered by the user");
+        //    }
+        //    else
+        //    {
+        //        using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
+        //        {
+        //            await cmd.ExecuteNonQueryAsync();
+        //        }
 
-                DBConnect.Dispose(conn);
-                return (ActionResult)new OkObjectResult("Succesfully signed up the coupon.");
-            }    
-        }
+        //        DBConnect.Dispose(conn);
+        //        return (ActionResult)new OkObjectResult("Succesfully signed up the coupon.");
+        //    }    
+        //}
     }
 }
