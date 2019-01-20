@@ -120,7 +120,7 @@ namespace GildtAPI.DAO
 
         public async Task<int> AddEvent(Event evenT)
         {
-            int EventAlreadyExist = 400;
+            int EventAlreadyExist = 400; // komt meerdere keren voor, kan dit in een methode ?
             int RowsAffected;
 
             List<Event> eventsList = await GetAllEvents();
@@ -141,9 +141,9 @@ namespace GildtAPI.DAO
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
-            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                RowsAffected = await cmd2.ExecuteNonQueryAsync();
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 
             // Close the database connection
@@ -249,6 +249,7 @@ namespace GildtAPI.DAO
 
             //check if event exist
             Event DesiredEvent = await GetTheEvent(eventId);
+
             if (DesiredEvent == null)
             {
                 return EventDoesNotExist;
