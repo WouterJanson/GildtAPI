@@ -191,45 +191,6 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> Createtag(string tag)
-        {
-            int TagAlreadyExist = 400;
-            int RowsAffected;
-
-            // Queries
-            var sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
-            var sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            // check if tag already exist in the database to avoid dublicate entries
-            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
-
-            using (SqlDataReader reader = cmd2.ExecuteReader())
-            {
-                //check if tag already exist in the database
-                if (reader.HasRows)
-                {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-
-                    return TagAlreadyExist;
-                }
-
-                reader.Close();
-            }
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-               RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-            return RowsAffected;
-        }
-
         public async Task<int> AddTag(int eventId, int tagId)
         {
             int EventDoesNotExist = 400;
@@ -297,5 +258,86 @@ namespace GildtAPI.DAO
 
             return RowsAffected;
         }
+
+        public async Task<int> EditTag(Tag tag)
+        {
+            int RowsAffected;
+
+            //query om te updaten
+            string sqlStrUpdate = $"UPDATE Tags SET " +
+                                  $"Name = COALESCE({(tag.Name == null ? "NULL" : $"'{tag.Name}'")}, Name)" +
+                                  $"Where Id= {tag.Id}";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+            {
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+
+            return RowsAffected;
+        }
+
+        public async Task<int> DeleteTag(int tagId)
+        {
+            //queries
+            var sqlStr = $"DELETE Tags WHERE Id = '{tagId}'";
+            int rowsAffected;
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            DBConnect.Dispose(conn);
+
+            return rowsAffected;
+        }
+
+        public async Task<int> Createtag(string tag)
+        {
+            int TagAlreadyExist = 400;
+            int RowsAffected;
+
+            // Queries
+            var sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
+            var sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            // check if tag already exist in the database to avoid dublicate entries
+            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+
+            using (SqlDataReader reader = cmd2.ExecuteReader())
+            {
+                //check if tag already exist in the database
+                if (reader.HasRows)
+                {
+                    // Close the database connection
+                    DBConnect.Dispose(conn);
+
+                    return TagAlreadyExist;
+                }
+
+                reader.Close();
+            }
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+            return RowsAffected;
+        }
+
     }
 }

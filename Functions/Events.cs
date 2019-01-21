@@ -188,10 +188,90 @@ namespace GildtAPI.Functions
         }
 
 
+        [FunctionName("AddTags")]
+        public static async Task<HttpResponseMessage> AddTags(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
+            ILogger log, string Eventid, string TagId)
+        {
+
+            // Check if Eventid is valid
+            if (!GlobalFunctions.CheckValidId(Eventid))
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId");
+            }
+
+            // Check if TagId is valid
+            if (!GlobalFunctions.CheckValidId(TagId))
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
+            }
+
+            int status = await EventController.Instance.AddTag(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+
+            //error handling 
+            if (status == 400)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the event does not exist...");
+            }
+            else if (status == 401)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag does not exist...");
+            }
+            else if (status == 402)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag is already assigned to the specified Event...");
+            }
+            else if (status > 0)
+            {
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully added Tag the the Event!");
+            }
+            else // is dit niet overbodig zoek uit
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed.");
+            }
+        }
+
+
+        [FunctionName("EditTags")]
+        public static async Task<HttpResponseMessage> EditCoupon(
+           [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
+           ILogger log, string tagid)
+        {
+
+
+
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            Tag tag = new Tag(0, "");
+            tag.Name = formData["Name"];
+            tag.Id = Convert.ToInt32(tagid);
+
+            //check if id is numeric, if it is a number it will give back true if not false
+            if (Regex.IsMatch(tagid, @"^\d+$") == false)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
+            }
+
+            int rowsAffected = await EventController.Instance.EditTag(tag);
+
+            //controleren of er rows in de DB zijn aangepast return 400
+            if (rowsAffected == 0)
+            {
+                return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag with id: {tagid} does not exist.");
+            }
+
+            else
+            {
+                //waardes in DB aangepast return 200
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the Tag");
+            }
+
+        }
+
+
         [FunctionName("CreateTag")]
         public static async Task<HttpResponseMessage> CreateTag(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Create")] HttpRequestMessage req,
-        ILogger log)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Create")] HttpRequestMessage req,
+            ILogger log)
         {
             List<string> missingFields = new List<string>();
 
@@ -229,127 +309,34 @@ namespace GildtAPI.Functions
         }
 
 
-        [FunctionName("AddTags")]
-        public static async Task<HttpResponseMessage> AddTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
-            ILogger log, string Eventid, string TagId)
-        {
-
-            // Check if Eventid is valid
-            if (!GlobalFunctions.CheckValidId(Eventid))
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId");
-            }
-
-            // Check if TagId is valid
-            if (!GlobalFunctions.CheckValidId(TagId))
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
-            }
-
-            int status = await EventController.Instance.AddTag(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
-
-            //error handling 
-            if (status == 400)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the event does not exist...");
-            }
-            else if (status == 401)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag does not exist...");
-            }
-            else if (status == 402) 
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag is already assigned to the specified Event...");
-            }
-            else if (status > 0)
-            {
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully added Tag the the Event!");
-            }
-            else // is dit niet overbodig zoek uit
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed.");
-            }
-        }
-
-
         [FunctionName("DeleteTags")]
-        public static async Task<IActionResult> DeleteTags(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequest req,
-        ILogger log, string id)
-        {
-            var sqlStr = $"DELETE Tags WHERE Id = '{id}'";
+        public static async Task<HttpResponseMessage> DeleteTags(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequestMessage req,
+            ILogger log, string tagid)
+        {           
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            if (id != null)
+            //check if id is numeric, if it is a number it will give back true if not false
+            if (Regex.IsMatch(tagid, @"^\d+$") == false)
             {
-                //check if id is numeric, if it is a number it will give back true if not false
-                if (Regex.IsMatch(id, @"^\d+$") == false)
-                {
-                    return (ActionResult)new BadRequestObjectResult("Invalid input, id should be numeric and not negative"); // status 400
-                }
+               return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
             }
-         
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+
+            int rowsAffected = await EventController.Instance.DeleteTag(Convert.ToInt32(tagid));
+
+            if (rowsAffected == 0)
             {
-                int affectedRows = cmd.ExecuteNonQuery();
-                //cmd.ExecuteNonQuery();
-                DBConnect.Dispose(conn);
-                if (affectedRows == 0)
-                {
-                return new NotFoundObjectResult($"Deleting TAGS failed: Tag {id} does not have any tags!");
-                }
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Deleting TAGS failed: Tag by the ID : {tagid} does not exist");
+            }
 
-                return (ActionResult)new OkObjectResult("Sucessfully deleted the tag");
-            }            
-           
-        }
-
-
-        [FunctionName("EditTags")]
-        public static async Task<HttpResponseMessage> EditCoupon(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
-            ILogger log, string id)
-        {
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string name = formData["Name"];
-
-            //query om te updaten
-            string sqlStrUpdate = $"UPDATE Tags SET " +
-                                  $"Name = COALESCE({(name == null ? "NULL" : $"'{name}'")}, Name)" +
-                                  $"Where Id= {id}";
-            //db connectie
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+            else
             {
-                try
-                {
-                    //krijgt pas waarde als query is voldaan
-                    int affectedRows = await cmd.ExecuteNonQueryAsync();
-                    DBConnect.Dispose(conn);
-
-                    //controleren of er rows in de DB zijn aangepast return 400
-                    if (affectedRows == 0)
-                    {
-                        return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag with id: {id} does not exist.");
-                    }
-                    //waardes in DB aangepast return 200
-                    return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the Tag"); ;
-                }
-                catch (InvalidCastException e)
-                {
-                    //object niet gevonden return 404
-                    return req.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message);
-                }
-
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully deleted Tag!");
             }
 
         }
 
+       
     }
 }
-
 
 

@@ -34,14 +34,24 @@ namespace GildtAPI.Controllers
             return await EventDAO.Instance.EditEvent(evenT);
         }
 
-        public async Task<int> CreateTag(string tag)
-        {
-            return await EventDAO.Instance.Createtag(tag);
-        }
-
         public async Task<int> AddTag(int eventId, int tagId)
         {
             return await EventDAO.Instance.AddTag(eventId, tagId);
+        }
+
+        public async Task<int> DeleteTag(int tagid)
+        {
+            return await EventDAO.Instance.DeleteTag(tagid);
+        }
+
+        public async Task<int> EditTag(Tag tag)
+        {
+            return await EventDAO.Instance.EditTag(tag);
+        }
+
+        public async Task<int> CreateTag(string tag)
+        {
+            return await EventDAO.Instance.Createtag(tag);
         }
     }
 }
