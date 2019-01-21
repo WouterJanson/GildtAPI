@@ -28,5 +28,15 @@ namespace GildtAPI.Controllers
             return await CouponDAO.Instance.Delete(id);
         }
 
+        public async Task<int> Edit(Coupon coupon)
+        {
+            return await CouponDAO.Instance.Edit(coupon);
+        }
+
+        public async Task<int> SignUp(int couponId, int userId)
+        {
+            return await CouponDAO.Instance.Signup(couponId, userId);
+        }
+
     }
 }

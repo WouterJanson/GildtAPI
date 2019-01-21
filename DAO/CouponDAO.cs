@@ -114,18 +114,30 @@ namespace GildtAPI.DAO
             var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES ('{userId}', '{couponId}')";
             var sqlGet =
                 $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = '{couponId}' AND UserId = '{userId}'";
+            int rowsAffected;
 
             SqlConnection conn = DBConnect.GetConnection();
-
-
 
             SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
             checkCoupon.Parameters.AddWithValue("CouponId", couponId);
             checkCoupon.Parameters.AddWithValue("UserId", userId);
             int CouponExist = (int)checkCoupon.ExecuteScalar();
 
-            // @TODO: Temp return value, change it!
-            return 0;
+            if (CouponExist > 0)
+            {
+                return 0;
+            }
+            else
+            {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+                {
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+            DBConnect.Dispose(conn);
+
+            return rowsAffected;
         }
 
         public async Task AddCouponsToList(string sqlStr, SqlConnection conn)

@@ -13,7 +13,6 @@ namespace GildtAPI.DAO
         private static List<UsersCoupon> couponsList = new List<UsersCoupon>();
 
         // Get all users 
-        // @TODO: I Think something is not right here...
         public async Task<List<User>> GetAll()
         {
             string sqlStrUsers = $"SELECT * FROM Users ";
