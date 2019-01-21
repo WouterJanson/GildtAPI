@@ -235,18 +235,16 @@ namespace GildtAPI.Functions
         [FunctionName("EditTags")]
         public static async Task<HttpResponseMessage> EditCoupon(
            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
-           ILogger log, string tagid)
+           ILogger log, string id)
         {
-
-
 
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             Tag tag = new Tag(0, "");
             tag.Name = formData["Name"];
-            tag.Id = Convert.ToInt32(tagid);
+            tag.Id = Convert.ToInt32(id);
 
             //check if id is numeric, if it is a number it will give back true if not false
-            if (Regex.IsMatch(tagid, @"^\d+$") == false)
+            if (Regex.IsMatch(id, @"^\d+$") == false)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
             }
@@ -256,7 +254,7 @@ namespace GildtAPI.Functions
             //controleren of er rows in de DB zijn aangepast return 400
             if (rowsAffected == 0)
             {
-                return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag with id: {tagid} does not exist.");
+                return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag does not exist.");
             }
 
             else
@@ -312,20 +310,20 @@ namespace GildtAPI.Functions
         [FunctionName("DeleteTags")]
         public static async Task<HttpResponseMessage> DeleteTags(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequestMessage req,
-            ILogger log, string tagid)
+            ILogger log, string id)
         {           
 
             //check if id is numeric, if it is a number it will give back true if not false
-            if (Regex.IsMatch(tagid, @"^\d+$") == false)
+            if (Regex.IsMatch(id, @"^\d+$") == false)
             {
                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
             }
 
-            int rowsAffected = await EventController.Instance.DeleteTag(Convert.ToInt32(tagid));
+            int rowsAffected = await EventController.Instance.DeleteTag(Convert.ToInt32(id));
 
             if (rowsAffected == 0)
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Deleting TAGS failed: Tag by the ID : {tagid} does not exist");
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Deleting TAGS failed: Tag does not exist");
             }
 
             else
