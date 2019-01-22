@@ -21,7 +21,7 @@ namespace GildtAPI.Functions
 {
     public static class Events
     {
-        [FunctionName("Events")]
+        [FunctionName("GetEvents")]
         public static async Task<HttpResponseMessage> GetEvents(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequestMessage req,
             ILogger log)
@@ -80,7 +80,7 @@ namespace GildtAPI.Functions
             }
             else
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the event, event might not exist.");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the event");
             }
 
         }
@@ -139,7 +139,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created event.");
             }
-            else // is dit niet overbodig zoek uit
+            else 
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed.");
             }
@@ -170,17 +170,13 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, id should be numeric and not negative"); // status 400
             }
 
-            int EventStatus = await EventController.Instance.EditEvent(evenT);
+            int RowsAffected = await EventController.Instance.EditEvent(evenT);
 
-            if (EventStatus == 400)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Event does not exist");
-            }
-            else if (EventStatus > 0)
+            if (RowsAffected > 0)
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the event.");
             }
-            else // is dit niet overbodig zoek uit
+            else
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed.");
             }
@@ -233,7 +229,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("EditTags")]
-        public static async Task<HttpResponseMessage> EditCoupon(
+        public static async Task<HttpResponseMessage> EditTags(
            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
            ILogger log, string id)
         {

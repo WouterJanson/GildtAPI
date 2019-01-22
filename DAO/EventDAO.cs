@@ -15,7 +15,7 @@ namespace GildtAPI.DAO
         public async Task<List<Event>> GetAllEvents()
         {
             // get all events Query
-            var sqlStr = $"SELECT Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
+            string sqlStr = $"SELECT Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
                 $"LEFT JOIN (SELECT EventsTags.EventsId, Tags.Name AS Tag, Tags.Id AS TagId FROM EventsTags " +
                 $"LEFT JOIN Tags ON EventsTags.TagsId = Tags.Id) as tags ON Events.Id = tags.EventsId ORDER BY Events.Id";
 
@@ -103,7 +103,7 @@ namespace GildtAPI.DAO
         public async Task<int> DeleteEvent(int id)
         {
             //queries
-            var sqlStr = $"DELETE Events WHERE Id = '{id}'";
+            string sqlStr = $"DELETE Events WHERE Id = '{id}'";
             int rowsAffected;
 
             SqlConnection conn = DBConnect.GetConnection();
@@ -135,7 +135,7 @@ namespace GildtAPI.DAO
             }
 
             // Queries
-            var sqlStr =
+            string sqlStr =
             $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{evenT.Name}', '{evenT.Location}', '{evenT.StartDate}', '{evenT.EndDate}', '{evenT.ShortDescription}', '{evenT.LongDescription}', '{evenT.Image}', 'false')";
 
             //Connects with the database
@@ -154,7 +154,6 @@ namespace GildtAPI.DAO
 
         public async Task<int> EditEvent(Event evenT)
         {
-            int EventDoesNotExist = 400;
             int RowsAffected;
 
             Event DesiredEvent = await GetTheEvent(evenT.Id);
@@ -162,11 +161,11 @@ namespace GildtAPI.DAO
             //check if event exist
             if (DesiredEvent == null)
             {
-                return EventDoesNotExist;
+                return 0;
             }
 
             // Queries
-            var sqlStr = $"UPDATE Events SET " +
+            string sqlStr = $"UPDATE Events SET " +
             $"Name = COALESCE({(evenT.Name == null ? "NULL" : $"\'{evenT.Name}\'")}, Name), " +
             $"Location = COALESCE({(evenT.Location == null ? "NULL" : $"\'{evenT.Location}\'")}, Location), " +
             $"StartDate = COALESCE({(evenT.StartDate == null ? "NULL" : $"\'{evenT.StartDate}\'")}, StartDate), " +
@@ -174,7 +173,7 @@ namespace GildtAPI.DAO
             $"ShortDescription = COALESCE({(evenT.ShortDescription == null ? "NULL" : $"\'{evenT.ShortDescription}\'")}, ShortDescription), " +
             $"LongDescription = COALESCE({(evenT.LongDescription == null ? "NULL" : $"\'{evenT.LongDescription}\'")}, LongDescription), " +
             $"Image = COALESCE({(evenT.Image == null ? "NULL" : $"\'{evenT.Image}\'")}, image), " +
-            $"IsActive = COALESCE({(evenT.IsActive == null ? "NULL" : $"\'{evenT.IsActive}\'")}, IsActive) " +
+            $"IsActive = COALESCE({(evenT.IsActive == false ? "NULL" : $"\'{evenT.IsActive}\'")}, IsActive) " +
             $" WHERE id = {evenT.Id};";
 
             //Connects with the database
@@ -191,6 +190,47 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
+        public async Task<int> EditTag(Tag tag)
+        {
+            int RowsAffected;
+
+            //query om te updaten
+            string sqlStrUpdate = $"UPDATE Tags SET " +
+                                  $"Name = COALESCE({(tag.Name == null ? "NULL" : $"'{tag.Name}'")}, Name)" +
+                                  $"Where Id= {tag.Id}";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+            {
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+
+            return RowsAffected;
+        }
+
+        public async Task<int> DeleteTag(int tagId)
+        {
+            //queries
+            string sqlStr = $"DELETE Tags WHERE Id = '{tagId}'";
+            int rowsAffected;
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            DBConnect.Dispose(conn);
+
+            return rowsAffected;
+        }
+
         public async Task<int> AddTag(int eventId, int tagId)
         {
             int EventDoesNotExist = 400;
@@ -199,11 +239,11 @@ namespace GildtAPI.DAO
             int RowsAffected;
 
             // Queries
-            var sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
+            string sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
             // querry to validate Tag (does it exist?)
-            var sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id ='{tagId}'";
+            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id ='{tagId}'";
             // querry to check if the given tag is already assigned to a event
-            var SqlCheckIfAssigned = $"SELECT TagsId, EventsId FROM EventsTags WHERE TagsId = '{tagId}' AND EventsId = '{eventId}'";
+            string SqlCheckIfAssigned = $"SELECT TagsId, EventsId FROM EventsTags WHERE TagsId = '{tagId}' AND EventsId = '{eventId}'";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
@@ -259,55 +299,14 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> EditTag(Tag tag)
-        {
-            int RowsAffected;
-
-            //query om te updaten
-            string sqlStrUpdate = $"UPDATE Tags SET " +
-                                  $"Name = COALESCE({(tag.Name == null ? "NULL" : $"'{tag.Name}'")}, Name)" +
-                                  $"Where Id= {tag.Id}";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
-            {
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-
-            return RowsAffected;
-        }
-
-        public async Task<int> DeleteTag(int tagId)
-        {
-            //queries
-            var sqlStr = $"DELETE Tags WHERE Id = '{tagId}'";
-            int rowsAffected;
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            DBConnect.Dispose(conn);
-
-            return rowsAffected;
-        }
-
         public async Task<int> Createtag(string tag)
         {
             int TagAlreadyExist = 400;
             int RowsAffected;
 
             // Queries
-            var sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
-            var sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
+            string sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
+            string sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
