@@ -155,10 +155,12 @@ namespace GildtAPI.Functions
             }
 
             int rowsAffected = await SongRequestController.Instance.UpVote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
+            if (rowsAffected == 0)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
+            }
 
-            return rowsAffected > 0
-                ? req.CreateResponse(HttpStatusCode.OK, "Successfully Voted.", "application/json")
-                : req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
+            return req.CreateResponse(HttpStatusCode.OK, "Successfully Voted.", "application/json");
 
         }
 
@@ -173,10 +175,12 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
             int rowsAffected = await SongRequestController.Instance.Downvote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
+            if (rowsAffected == 0)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
+            }
 
-            return rowsAffected > 0
-                ? req.CreateResponse(HttpStatusCode.OK, "Successfully Voted.", "application/json")
-                : req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
+            return req.CreateResponse(HttpStatusCode.OK, "Successfully Voted.", "application/json");
 
         }
     }
