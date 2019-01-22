@@ -21,6 +21,288 @@ namespace GildtAPI.DAO
 
             SqlConnection conn = DBConnect.GetConnection();
 
+            await AddEventsToList(sqlStr, conn);
+
+            DBConnect.Dispose(conn);
+
+            return events;
+        }
+
+        // Get single user
+        public async Task<Event> GetTheEvent(int id)
+        {
+            List<Event> eventslist = await GetAllEvents();
+
+            foreach (Event evenT in eventslist)
+            {
+                // start looking for the desired event by ID
+                if (evenT.Id == id)
+                {
+                    return evenT;
+                }
+            }
+
+            // if no results have been found return a null
+            return null;
+        }
+
+        public async Task<int> DeleteEvent(int id)
+        {
+            //queries
+            string sqlStr = $"DELETE Events WHERE Id = @id";
+            int rowsAffected;
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                cmd.Parameters.AddWithValue("@Id", id);
+
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            DBConnect.Dispose(conn);
+
+            return rowsAffected;
+        }
+
+        public async Task<int> CreateEvent(Event evenT)
+        {
+            int EventAlreadyExist = 400; // komt meerdere keren voor, kan dit in een methode ?
+            int RowsAffected;
+
+            List<Event> eventsList = await GetAllEvents();
+
+            //check if event already exist
+            foreach (Event e in eventsList)
+            {
+                if (e.Name == evenT.Name && e.StartDate == evenT.StartDate)
+                {
+                    return EventAlreadyExist;
+                }
+            }
+
+            // Queries
+            string sqlStr =
+            $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES (@Name, @Location, @StartDate, @EndDate, @ShortDescription, @LongDescription, @Image, 'false')";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                cmd.Parameters.AddWithValue("@Name", evenT.Name);
+                cmd.Parameters.AddWithValue("@Location", evenT.Location);
+                cmd.Parameters.AddWithValue("@StartDate", evenT.StartDate);
+                cmd.Parameters.AddWithValue("@EndDate", evenT.EndDate);
+                cmd.Parameters.AddWithValue("@ShortDescription", evenT.ShortDescription);
+                cmd.Parameters.AddWithValue("@LongDescription", evenT.LongDescription);
+                cmd.Parameters.AddWithValue("@Image", evenT.Image);
+
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+
+            return RowsAffected;
+        }
+
+        public async Task<int> EditEvent(Event evenT)
+        {
+            int RowsAffected;
+
+            Event DesiredEvent = await GetTheEvent(evenT.Id);
+
+            //check if event exist
+            if (DesiredEvent == null)
+            {
+                return 0;
+            }
+
+            // Queries
+            string sqlStr = $"UPDATE Events SET " +
+            $"Name = COALESCE({(evenT.Name == null ? "NULL" : "@Name")}, Name), " +
+            $"Location = COALESCE({(evenT.Location == null ? "NULL" : "@Location")}, Location), " +
+            $"StartDate = COALESCE({(evenT.StartDate == null ? "NULL" : "@StartDate")}, StartDate), " +
+            $"EndDate = COALESCE({(evenT.EndDate == null ? "NULL" : "@EndDate")}, EndDate), " +
+            $"ShortDescription = COALESCE({(evenT.ShortDescription == null ? "NULL" : "@ShortDescription")}, ShortDescription), " +
+            $"LongDescription = COALESCE({(evenT.LongDescription == null ? "NULL" : "@LongDescription")}, LongDescription), " +
+            $"Image = COALESCE({(evenT.Image == null ? "NULL" : "@Image")}, image), " +
+            $"IsActive = COALESCE({(evenT.IsActive == false ? "NULL" : "@IsActive")}, IsActive) " +
+            $" WHERE id = @Id";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                cmd.Parameters.AddWithValue("@Id", ((object)evenT.Id) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Name", ((object)evenT.Name) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Location", ((object)evenT.Location) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@StartDate", ((object)evenT.StartDate) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@EndDate", ((object)evenT.EndDate) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@ShortDescription", ((object)evenT.ShortDescription) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@LongDescription", ((object)evenT.LongDescription) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Image", ((object)evenT.Image) ?? DBNull.Value);
+
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+
+            return RowsAffected;
+        }
+
+        public async Task<int> EditTag(string tag, string id)
+        {
+            int RowsAffected;
+
+            //query om te updaten
+            string sqlStrUpdate = $"UPDATE Tags SET " +
+                                  $"Name = COALESCE({(tag == null ? "NULL" : "@Tag")}, Name)" +
+                                  $"Where Id= @Id";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+            {
+                cmd.Parameters.AddWithValue("@Id", id);
+                cmd.Parameters.AddWithValue("@Tag", tag);
+
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+
+            return RowsAffected;
+        }
+
+        public async Task<int> DeleteTag(int Id)
+        {
+            //queries
+            string sqlStr = $"DELETE Tags WHERE Id = @Id";
+            int rowsAffected;
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                cmd.Parameters.AddWithValue("@Id", Id);
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            DBConnect.Dispose(conn);
+
+            return rowsAffected;
+        }
+
+        public async Task<int> AddTag(int eventId, int tagId)
+        {
+            int EventDoesNotExist = 400;
+            int TagDoesNotExist = 401;
+            int TagAlreadyAssigned = 402;
+            int RowsAffected;
+
+            // Queries
+            string sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES (@eventId, @tagId)";
+            // querry to validate Tag (does it exist?)
+            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+            
+            Event DesiredEvent = await GetTheEvent(eventId);
+
+            //check if event exist
+            if (DesiredEvent == null)
+            {
+                return EventDoesNotExist;
+            }
+
+            for (int i = 0; i < DesiredEvent.Tags.Length; i++)
+            {
+                if (DesiredEvent.Tags[i].Id == tagId)
+                {
+                    return TagAlreadyAssigned;
+                }
+            }
+
+            //check if given tag exist
+            using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
+            {
+                cmd.Parameters.AddWithValue("@tagId", tagId);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    // check if the query has found a tag with the given TagId
+                    if (reader.HasRows == false)
+                    {
+                        DBConnect.Dispose(conn);
+                        return TagDoesNotExist;                        
+                    }
+                    reader.Close();                    
+                }
+            }
+
+            //execute operation if everything is OK
+            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
+            {
+                cmd2.Parameters.AddWithValue("@tagId", tagId);
+                cmd2.Parameters.AddWithValue("@eventId", eventId);
+
+                // insert in to the table EventsTags
+                RowsAffected = await cmd2.ExecuteNonQueryAsync();
+                DBConnect.Dispose(conn);
+            }
+
+            return RowsAffected;
+        }
+
+        public async Task<int> Createtag(string tag)
+        {
+            int TagAlreadyExist = 400;
+            int RowsAffected;
+
+            // Queries
+            string sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
+            string sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            // check if tag already exist in the database to avoid dublicate entries
+            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+
+            using (SqlDataReader reader = cmd2.ExecuteReader())
+            {
+                //check if tag already exist in the database
+                if (reader.HasRows)
+                {
+                    // Close the database connection
+                    DBConnect.Dispose(conn);
+
+                    return TagAlreadyExist;
+                }
+                reader.Close();
+            }
+
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                RowsAffected = await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+            return RowsAffected;
+        }
+
+        public async Task AddEventsToList(string sqlStr, SqlConnection conn)
+        {
+            events.Clear();
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -76,266 +358,6 @@ namespace GildtAPI.DAO
                 events.Add(currentEvent);
                 reader.Close();
             }
-
-            DBConnect.Dispose(conn);
-
-            return events;
-        }
-
-        // Get single user
-        public async Task<Event> GetTheEvent(int id)
-        {
-            List<Event> eventslist = await GetAllEvents();
-
-            foreach (Event evenT in eventslist)
-            {
-                // start looking for the desired event by ID
-                if (evenT.Id == id)
-                {
-                    return evenT;
-                }
-            }
-
-            // if no results have been found return a null
-            return null;
-        }
-
-        public async Task<int> DeleteEvent(int id)
-        {
-            //queries
-            string sqlStr = $"DELETE Events WHERE Id = '{id}'";
-            int rowsAffected;
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            DBConnect.Dispose(conn);
-
-            return rowsAffected;
-        }
-
-        public async Task<int> AddEvent(Event evenT)
-        {
-            int EventAlreadyExist = 400; // komt meerdere keren voor, kan dit in een methode ?
-            int RowsAffected;
-
-            List<Event> eventsList = await GetAllEvents();
-
-            //check if event already exist
-            foreach (Event e in eventsList)
-            {
-                if (e.Name == evenT.Name && e.StartDate == evenT.StartDate)
-                {
-                    return EventAlreadyExist;
-                }
-            }
-
-            // Queries
-            string sqlStr =
-            $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES ('{evenT.Name}', '{evenT.Location}', '{evenT.StartDate}', '{evenT.EndDate}', '{evenT.ShortDescription}', '{evenT.LongDescription}', '{evenT.Image}', 'false')";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-
-            return RowsAffected;
-        }
-
-        public async Task<int> EditEvent(Event evenT)
-        {
-            int RowsAffected;
-
-            Event DesiredEvent = await GetTheEvent(evenT.Id);
-
-            //check if event exist
-            if (DesiredEvent == null)
-            {
-                return 0;
-            }
-
-            // Queries
-            string sqlStr = $"UPDATE Events SET " +
-            $"Name = COALESCE({(evenT.Name == null ? "NULL" : $"\'{evenT.Name}\'")}, Name), " +
-            $"Location = COALESCE({(evenT.Location == null ? "NULL" : $"\'{evenT.Location}\'")}, Location), " +
-            $"StartDate = COALESCE({(evenT.StartDate == null ? "NULL" : $"\'{evenT.StartDate}\'")}, StartDate), " +
-            $"EndDate = COALESCE({(evenT.EndDate == null ? "NULL" : $"\'{evenT.EndDate}\'")}, EndDate), " +
-            $"ShortDescription = COALESCE({(evenT.ShortDescription == null ? "NULL" : $"\'{evenT.ShortDescription}\'")}, ShortDescription), " +
-            $"LongDescription = COALESCE({(evenT.LongDescription == null ? "NULL" : $"\'{evenT.LongDescription}\'")}, LongDescription), " +
-            $"Image = COALESCE({(evenT.Image == null ? "NULL" : $"\'{evenT.Image}\'")}, image), " +
-            $"IsActive = COALESCE({(evenT.IsActive == false ? "NULL" : $"\'{evenT.IsActive}\'")}, IsActive) " +
-            $" WHERE id = {evenT.Id};";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-
-            return RowsAffected;
-        }
-
-        public async Task<int> EditTag(string tag, string id)
-        {
-            int RowsAffected;
-
-            //query om te updaten
-            string sqlStrUpdate = $"UPDATE Tags SET " +
-                                  $"Name = COALESCE({(tag == null ? "NULL" : $"'{tag}'")}, Name)" +
-                                  $"Where Id= {id}";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
-            {
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-
-            return RowsAffected;
-        }
-
-        public async Task<int> DeleteTag(int tagId)
-        {
-            //queries
-            string sqlStr = $"DELETE Tags WHERE Id = '{tagId}'";
-            int rowsAffected;
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            DBConnect.Dispose(conn);
-
-            return rowsAffected;
-        }
-
-        public async Task<int> AddTag(int eventId, int tagId)
-        {
-            int EventDoesNotExist = 400;
-            int TagDoesNotExist = 401;
-            int TagAlreadyAssigned = 402;
-            int RowsAffected;
-
-            // Queries
-            string sqlStr = $"INSERT INTO EventsTags (EventsId, TagsId) VALUES ('{eventId}', '{tagId}')";
-            // querry to validate Tag (does it exist?)
-            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id ='{tagId}'";
-            // querry to check if the given tag is already assigned to a event
-            string SqlCheckIfAssigned = $"SELECT TagsId, EventsId FROM EventsTags WHERE TagsId = '{tagId}' AND EventsId = '{eventId}'";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            //check if event exist
-            Event DesiredEvent = await GetTheEvent(eventId);
-
-            if (DesiredEvent == null)
-            {
-                return EventDoesNotExist;
-            }
-
-            //check if given tag exist
-            using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
-            {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    // check if the query has found a tag with the given TagId
-                    if (reader.HasRows == false)
-                    {
-                        reader.Close();
-                        // Close the database connection
-                        DBConnect.Dispose(conn);
-                        return TagDoesNotExist;
-                    }
-                }
-            }
-
-            //check if a tag is already assigned to the event
-            using (SqlCommand cmd2 = new SqlCommand(SqlCheckIfAssigned, conn))
-            {
-                using (SqlDataReader reader2 = cmd2.ExecuteReader())
-                {
-                    // check if the query has found a tag with the given TagId
-                    if (reader2.HasRows == true)
-                    {
-                        reader2.Close();
-                        // Close the database connection
-                        DBConnect.Dispose(conn);
-                        return TagAlreadyAssigned;
-                    }
-                }
-            }
-
-            //execute operation if everything is OK
-            using (SqlCommand cmd3 = new SqlCommand(sqlStr, conn))
-            {
-                // insert in to the table EventsTags
-                RowsAffected = await cmd3.ExecuteNonQueryAsync();
-                DBConnect.Dispose(conn);
-            }
-
-            return RowsAffected;
-        }
-
-        public async Task<int> Createtag(string tag)
-        {
-            int TagAlreadyExist = 400;
-            int RowsAffected;
-
-            // Queries
-            string sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
-            string sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            // check if tag already exist in the database to avoid dublicate entries
-            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
-
-            using (SqlDataReader reader = cmd2.ExecuteReader())
-            {
-                //check if tag already exist in the database
-                if (reader.HasRows)
-                {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-
-                    return TagAlreadyExist;
-                }
-
-                reader.Close();
-            }
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-            return RowsAffected;
         }
 
     }

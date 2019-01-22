@@ -26,7 +26,7 @@ namespace GildtAPI.Controllers
 
         public async Task<int> CreateEvent(Event evenT)
         {
-            return await EventDAO.Instance.AddEvent(evenT);
+            return await EventDAO.Instance.CreateEvent(evenT);
         }
 
         public async Task<int> EditEvent(Event evenT)

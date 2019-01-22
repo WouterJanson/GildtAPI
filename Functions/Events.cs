@@ -53,7 +53,7 @@ namespace GildtAPI.Functions
             // check if a event is found by given id, if not than give a 404 not found
             if (evenT == null)
             {
-                return req.CreateResponse(HttpStatusCode.NotFound, "Event could not be found by the given ID", "application/json");
+                return req.CreateResponse(HttpStatusCode.NotFound, "Event could not be found by the given ID", "application/json"); // application/json -> returnt jason i.p.v text
             }
 
             return req.CreateResponse(HttpStatusCode.OK, evenT);
@@ -212,7 +212,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("EditTags")]
         public static async Task<HttpResponseMessage> EditTags(
-           [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/{id}")] HttpRequestMessage req,
+           [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/Edit/{id}")] HttpRequestMessage req,
            ILogger log, string id)
         {
 
