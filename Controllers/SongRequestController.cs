@@ -47,5 +47,9 @@ namespace GildtAPI.Controllers
         {
             return await SongRequestDAO.Instance.Upvote(RequestId, UserId);
         }
+        public async Task<int> Downvote(int RequestId, int UserId)
+        {
+            return await SongRequestDAO.Instance.Downvote(RequestId, UserId);
+        }
     }
 }

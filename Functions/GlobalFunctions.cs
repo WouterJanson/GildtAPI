@@ -1,21 +1,33 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace GildtAPI
 {
     public class GlobalFunctions
     {
         // Check if the Id of the object exists.
-        public static bool CheckValidId(string id)
+        public static bool CheckValidId(params string[] ids)
         {
             try
             {
-                if (id != null)
+                foreach(string id in ids)
                 {
-                    int Id = Convert.ToInt32(id);
-                    return true;
+                    // Checks if the id is not empty
+                    if (id != null)
+                    {
+                        int Id = Convert.ToInt32(id);
+
+                        // Checks if the id is a positive number
+                        if (Id >= 0)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
                 }
+                
             }
             catch
             {
