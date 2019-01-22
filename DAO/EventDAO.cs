@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Net;
 using System.Threading.Tasks;
 using GildtAPI.Model;
-using Microsoft.AspNetCore.Http;
 
 namespace GildtAPI.DAO
 {
@@ -268,34 +266,35 @@ namespace GildtAPI.DAO
             int RowsAffected;
 
             // Queries
-            string sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
-            string sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
+            string sqlStr = $"INSERT INTO Tags (Name) VALUES (@tag)";
+            string sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name = @tag";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
             // check if tag already exist in the database to avoid dublicate entries
             using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
-
-            using (SqlDataReader reader = cmd2.ExecuteReader())
             {
-                //check if tag already exist in the database
-                if (reader.HasRows)
+                cmd2.Parameters.AddWithValue("@tag", tag);
+
+                using (SqlDataReader reader = cmd2.ExecuteReader())
                 {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-
-                    return TagAlreadyExist;
+                    if (reader.HasRows)
+                    {
+                        DBConnect.Dispose(conn);
+                        return TagAlreadyExist;
+                    }
+                    reader.Close();
                 }
-                reader.Close();
             }
-
+           
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@tag", tag);
+
                 RowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 
-            // Close the database connection
             DBConnect.Dispose(conn);
             return RowsAffected;
         }

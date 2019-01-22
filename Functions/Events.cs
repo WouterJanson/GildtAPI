@@ -1,20 +1,14 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using GildtAPI.Model;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
-using System.Linq;
-using System.Text.RegularExpressions;
 using GildtAPI.Controllers;
 
 namespace GildtAPI.Functions
@@ -42,7 +36,6 @@ namespace GildtAPI.Functions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events/{id}")] HttpRequestMessage req,
          ILogger log, string id)
         {
-            // Check if id is valid
             if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
@@ -57,7 +50,6 @@ namespace GildtAPI.Functions
             }
 
             return req.CreateResponse(HttpStatusCode.OK, evenT);
-
         }
 
 
@@ -91,7 +83,6 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Add")] HttpRequestMessage req,
             ILogger log)
         {
-            List<string> missingFields = new List<string>();
             Event evenT = new Event();
 
             // Read data from input
@@ -125,7 +116,6 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed.", "application/json");
             }
-
         }
 
 
@@ -146,7 +136,6 @@ namespace GildtAPI.Functions
             evenT.LongDescription = formData["longdescription"];
             evenT.Image = formData["image"];
 
-            // Check if id is valid
             if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
@@ -162,7 +151,6 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed.", "application/json");
             }
-
         }
 
 
@@ -171,14 +159,11 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
-
-            // Check if Eventid is valid
             if (!GlobalFunctions.CheckValidId(Eventid))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId", "application/json");
             }
 
-            // Check if TagId is valid
             if (!GlobalFunctions.CheckValidId(TagId))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
@@ -215,7 +200,6 @@ namespace GildtAPI.Functions
            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/Edit/{id}")] HttpRequestMessage req,
            ILogger log, string id)
         {
-
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string tag = formData["Name"];
 
@@ -237,7 +221,6 @@ namespace GildtAPI.Functions
                 //waardes in DB aangepast return 200
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the Tag", "application/json");
             }
-
         }
 
 
@@ -246,8 +229,6 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Create")] HttpRequestMessage req,
             ILogger log)
         {
-            List<string> missingFields = new List<string>();
-
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string tag = formData["tag"];
 
@@ -280,8 +261,6 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-
-            // Check if id is valid
             if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
