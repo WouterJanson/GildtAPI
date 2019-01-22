@@ -111,11 +111,11 @@ namespace GildtAPI.DAO
 
             using(SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
             {
-                cmd.Parameters.AddWithValue("@Id", user.Id);
-                cmd.Parameters.AddWithValue("@Username", user.Username);
-                cmd.Parameters.AddWithValue("@Email", user.Email);
-                cmd.Parameters.AddWithValue("@Password", user.Password);
-                cmd.Parameters.AddWithValue("@IsAdmin", user.IsAdmin);
+                cmd.Parameters.AddWithValue("@Id", ((object)user.Id) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Username", ((object)user.Username) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Email", ((object)user.Email) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Password", ((object)user.Password) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@IsAdmin", ((object)user.IsAdmin) ?? DBNull.Value);
 
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
@@ -128,6 +128,7 @@ namespace GildtAPI.DAO
 
         private async Task addCouponsToList(string sqlStrCoupons, SqlConnection conn)
         {
+            couponsList.Clear();
             using (SqlCommand cmdCoupons = new SqlCommand(sqlStrCoupons, conn))
             {
                 SqlDataReader readerCoupons = await cmdCoupons.ExecuteReaderAsync();
@@ -154,6 +155,7 @@ namespace GildtAPI.DAO
 
         private async Task addUsersToList(string sqlStrUsers, SqlConnection conn)
         {
+            users.Clear();
             using(SqlCommand cmdUsers = new SqlCommand(sqlStrUsers, conn))
             {
                 SqlDataReader readerUsers = await cmdUsers.ExecuteReaderAsync();

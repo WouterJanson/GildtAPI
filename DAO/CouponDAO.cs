@@ -110,13 +110,13 @@ namespace GildtAPI.DAO
 
             using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
             {
-                cmd.Parameters.AddWithValue("@Id", coupon.Id);
-                cmd.Parameters.AddWithValue("@Name", coupon.Name);
-                cmd.Parameters.AddWithValue("@Description", coupon.Description);
-                cmd.Parameters.AddWithValue("@StartDate", coupon.StartDate);
-                cmd.Parameters.AddWithValue("@EndDate", coupon.EndDate);
-                cmd.Parameters.AddWithValue("@Type", coupon.Type);
-                cmd.Parameters.AddWithValue("@Image", coupon.Image);
+                cmd.Parameters.AddWithValue("@Id", ((object)coupon.Id) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Name", ((object)coupon.Name) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Description", ((object)coupon.Description) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@StartDate", ((object)coupon.StartDate) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@EndDate", ((object)coupon.EndDate) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Type", ((object)coupon.Type) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Image", ((object)coupon.Image) ?? DBNull.Value);
 
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
@@ -162,6 +162,7 @@ namespace GildtAPI.DAO
 
         public async Task AddCouponsToList(string sqlStr, SqlConnection conn)
         {
+            coupons.Clear();
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
