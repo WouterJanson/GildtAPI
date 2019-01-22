@@ -153,7 +153,7 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> AddTag(int eventId, int tagId)
+        public async Task<int> AddTagToEvent(int eventId, int tagId)
         {
             int EventDoesNotExist = 400;
             int TagDoesNotExist = 401;
@@ -182,6 +182,59 @@ namespace GildtAPI.DAO
                 {
                     return TagAlreadyAssigned;
                 }
+            }
+
+            //check if given tag exist
+            using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
+            {
+                cmd.Parameters.AddWithValue("@tagId", tagId);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    // check if the query has found a tag with the given TagId
+                    if (reader.HasRows == false)
+                    {
+                        DBConnect.Dispose(conn);
+                        return TagDoesNotExist;
+                    }
+                    reader.Close();
+                }
+            }
+
+            //execute operation if everything is OK
+            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
+            {
+                cmd2.Parameters.AddWithValue("@tagId", tagId);
+                cmd2.Parameters.AddWithValue("@eventId", eventId);
+
+                // insert in to the table EventsTags
+                RowsAffected = await cmd2.ExecuteNonQueryAsync();
+                DBConnect.Dispose(conn);
+            }
+
+            return RowsAffected;
+        }
+
+        public async Task<int> RemoveTagFromEvent(int eventId, int tagId)
+        {
+            int EventDoesNotExist = 400;
+            int TagDoesNotExist = 401;
+            int RowsAffected;
+
+            // Queries
+            string sqlStr = $"DELETE EventsTags WHERE EventsId = @eventId AND TagsId = @tagId";
+            // querry to validate Tag (does it exist?)
+            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            Event DesiredEvent = await GetTheEvent(eventId);
+
+            //check if event exist
+            if (DesiredEvent == null)
+            {
+                return EventDoesNotExist;
             }
 
             //check if given tag exist
