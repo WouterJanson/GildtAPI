@@ -53,10 +53,11 @@ namespace GildtAPI.DAO
         public async Task<int> DeleteSongrequest(int id)
         {
             int rowsAffected;
-            var sqlStr = $"DELETE SongRequest WHERE Id = '{id}'";
+            var sqlStr = $"DELETE SongRequest WHERE Id = @id";
             SqlConnection conn = DBConnect.GetConnection();
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@id", id);
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
             return rowsAffected;
