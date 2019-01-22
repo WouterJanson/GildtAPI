@@ -1,28 +1,22 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using GildtAPI.Model;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
-using System.Linq;
-using System.Text.RegularExpressions;
 using GildtAPI.Controllers;
 
 namespace GildtAPI.Functions
 {
     public static class Events
     {
-        [FunctionName("GetEvents")]
-        public static async Task<HttpResponseMessage> GetEvents(
+        [FunctionName("GetAllEvents")]
+        public static async Task<HttpResponseMessage> GetAllEvents(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequestMessage req,
             ILogger log)
         {
@@ -42,7 +36,6 @@ namespace GildtAPI.Functions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events/{id}")] HttpRequestMessage req,
          ILogger log, string id)
         {
-            // Check if id is valid
             if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
@@ -57,7 +50,6 @@ namespace GildtAPI.Functions
             }
 
             return req.CreateResponse(HttpStatusCode.OK, evenT);
-
         }
 
 
@@ -86,12 +78,11 @@ namespace GildtAPI.Functions
         }
 
 
-        [FunctionName("AddEvent")]
-        public static async Task<HttpResponseMessage> AddEvent(
+        [FunctionName("CreateEvent")]
+        public static async Task<HttpResponseMessage> CreateEvent(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Add")] HttpRequestMessage req,
             ILogger log)
         {
-            List<string> missingFields = new List<string>();
             Event evenT = new Event();
 
             // Read data from input
@@ -125,7 +116,6 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed.", "application/json");
             }
-
         }
 
 
@@ -146,7 +136,6 @@ namespace GildtAPI.Functions
             evenT.LongDescription = formData["longdescription"];
             evenT.Image = formData["image"];
 
-            // Check if id is valid
             if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
@@ -162,29 +151,25 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed.", "application/json");
             }
-
         }
 
 
-        [FunctionName("AddTags")]
-        public static async Task<HttpResponseMessage> AddTags(
+        [FunctionName("AddTagToEvent")]
+        public static async Task<HttpResponseMessage> AddTagToEvent(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
-
-            // Check if Eventid is valid
             if (!GlobalFunctions.CheckValidId(Eventid))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId", "application/json");
             }
 
-            // Check if TagId is valid
             if (!GlobalFunctions.CheckValidId(TagId))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-            int status = await EventController.Instance.AddTag(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+            int status = await EventController.Instance.AddTagToEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
             //error handling 
             if (status == 400)
@@ -210,98 +195,42 @@ namespace GildtAPI.Functions
         }
 
 
-        [FunctionName("EditTags")]
-        public static async Task<HttpResponseMessage> EditTags(
-           [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Tags/Edit/{id}")] HttpRequestMessage req,
-           ILogger log, string id)
+        [FunctionName("RemoveTagFromEvent")]
+        public static async Task<HttpResponseMessage> RemoveTagFromEvent(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Remove/{Eventid}/{tagId}")] HttpRequestMessage req,
+            ILogger log, string Eventid, string TagId)
         {
-
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string tag = formData["Name"];
-
-            // Check if id is valid
-            if (!GlobalFunctions.CheckValidId(id))
+            if (!GlobalFunctions.CheckValidId(Eventid))
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.EditTag(tag,id);
-
-            //controleren of er rows in de DB zijn aangepast return 400
-            if (rowsAffected == 0)
+            if (!GlobalFunctions.CheckValidId(TagId))
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Edit Tags failed: Tag does not exist.", "application/json");
-            }
-            else
-            {
-                //waardes in DB aangepast return 200
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the Tag", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-        }
+            int status = await EventController.Instance.RemoveTagFromEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
-
-        [FunctionName("CreateTag")]
-        public static async Task<HttpResponseMessage> CreateTag(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Create")] HttpRequestMessage req,
-            ILogger log)
-        {
-            List<string> missingFields = new List<string>();
-
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string tag = formData["tag"];
-
-            bool inputIsValid = GlobalFunctions.CheckInputs(tag);
-
-            if (!inputIsValid)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Tag name is not filled in", "application/json");
-            }
-
-            int status = await EventController.Instance.CreateTag(tag);
-
+            //error handling 
             if (status == 400)
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not create tag, tag does already exist... this would create a dublicate tag", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not remove tag from the event, the event does not exist...", "application/json");
+            }
+            else if (status == 401)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not remove tag from the event, the tag does not exist...", "application/json");
             }
             else if (status > 0)
             {
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully created Tag.", "application/json");
+                return req.CreateResponse(HttpStatusCode.OK, "Successfully removed the Tag from the Event!", "application/json");
             }
-            else // is dit niet overbodig zoek uit
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "creating Tag failed.", "application/json");
-            }
-        }
-
-
-        [FunctionName("DeleteTags")]
-        public static async Task<HttpResponseMessage> DeleteTags(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequestMessage req,
-            ILogger log, string id)
-        {
-
-            // Check if id is valid
-            if (!GlobalFunctions.CheckValidId(id))
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
-            }
-
-            int rowsAffected = await EventController.Instance.DeleteTag(Convert.ToInt32(id));
-
-            if (rowsAffected == 0)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Deleting TAGS failed: Tag does not exist", "application/json");
-            }
-
             else
             {
-                return req.CreateResponse(HttpStatusCode.OK, "Successfully deleted Tag!", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "removing Tag failed.", "application/json");
             }
-
         }
 
-       
     }
 }
 

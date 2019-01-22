@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Net;
 using System.Threading.Tasks;
 using GildtAPI.Model;
-using Microsoft.AspNetCore.Http;
 
 namespace GildtAPI.DAO
 {
@@ -155,52 +153,7 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> EditTag(string tag, string id)
-        {
-            int RowsAffected;
-
-            //query om te updaten
-            string sqlStrUpdate = $"UPDATE Tags SET " +
-                                  $"Name = COALESCE({(tag == null ? "NULL" : "@Tag")}, Name)" +
-                                  $"Where Id= @Id";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", id);
-                cmd.Parameters.AddWithValue("@Tag", tag);
-
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-
-            return RowsAffected;
-        }
-
-        public async Task<int> DeleteTag(int Id)
-        {
-            //queries
-            string sqlStr = $"DELETE Tags WHERE Id = @Id";
-            int rowsAffected;
-
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", Id);
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            DBConnect.Dispose(conn);
-
-            return rowsAffected;
-        }
-
-        public async Task<int> AddTag(int eventId, int tagId)
+        public async Task<int> AddTagToEvent(int eventId, int tagId)
         {
             int EventDoesNotExist = 400;
             int TagDoesNotExist = 401;
@@ -214,7 +167,7 @@ namespace GildtAPI.DAO
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
-            
+
             Event DesiredEvent = await GetTheEvent(eventId);
 
             //check if event exist
@@ -242,9 +195,9 @@ namespace GildtAPI.DAO
                     if (reader.HasRows == false)
                     {
                         DBConnect.Dispose(conn);
-                        return TagDoesNotExist;                        
+                        return TagDoesNotExist;
                     }
-                    reader.Close();                    
+                    reader.Close();
                 }
             }
 
@@ -262,41 +215,56 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> Createtag(string tag)
+        public async Task<int> RemoveTagFromEvent(int eventId, int tagId)
         {
-            int TagAlreadyExist = 400;
+            int EventDoesNotExist = 400;
+            int TagDoesNotExist = 401;
             int RowsAffected;
 
             // Queries
-            string sqlStr = $"INSERT INTO Tags (Name) VALUES ('{tag}')";
-            string sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name ='{tag}'";
+            string sqlStr = $"DELETE EventsTags WHERE EventsId = @eventId AND TagsId = @tagId";
+            // querry to validate Tag (does it exist?)
+            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
 
-            // check if tag already exist in the database to avoid dublicate entries
-            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
+            Event DesiredEvent = await GetTheEvent(eventId);
 
-            using (SqlDataReader reader = cmd2.ExecuteReader())
+            //check if event exist
+            if (DesiredEvent == null)
             {
-                //check if tag already exist in the database
-                if (reader.HasRows)
+                return EventDoesNotExist;
+            }
+
+            //check if given tag exist
+            using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
+            {
+                cmd.Parameters.AddWithValue("@tagId", tagId);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-
-                    return TagAlreadyExist;
+                    // check if the query has found a tag with the given TagId
+                    if (reader.HasRows == false)
+                    {
+                        DBConnect.Dispose(conn);
+                        return TagDoesNotExist;
+                    }
+                    reader.Close();
                 }
-                reader.Close();
             }
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            //execute operation if everything is OK
+            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
             {
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
+                cmd2.Parameters.AddWithValue("@tagId", tagId);
+                cmd2.Parameters.AddWithValue("@eventId", eventId);
+
+                // insert in to the table EventsTags
+                RowsAffected = await cmd2.ExecuteNonQueryAsync();
+                DBConnect.Dispose(conn);
             }
 
-            // Close the database connection
-            DBConnect.Dispose(conn);
             return RowsAffected;
         }
 
