@@ -20,14 +20,14 @@ stages:
       url: http://localhost:7071/api/Events/Tags/Add/2323/23
       method: POST
     response:
-      status_code: 404
+      status_code: 400
 
   - name: Add a tag to the event where the tag does not exist
     request:
       url: http://localhost:7071/api/Events/Tags/Add/3/234
       method: POST
     response:
-      status_code: 404
+      status_code: 400
 
   - name: Invalid Input on EventId
     request:
