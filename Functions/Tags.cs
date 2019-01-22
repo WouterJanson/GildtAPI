@@ -3,9 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using GildtAPI.Model;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
@@ -34,7 +31,7 @@ namespace GildtAPI.Functions
             //controleren of er rows in de DB zijn aangepast return 400
             if (rowsAffected == 0)
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Edit Tags failed: Tag does not exist.", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Edit Tag failed: Tag does not exist.", "application/json");
             }
             else
             {
@@ -59,19 +56,15 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Tag name is not filled in", "application/json");
             }
 
-            int status = await TagController.Instance.CreateTag(tag);
+            int rowsAffected = await TagController.Instance.CreateTag(tag);
 
-            if (status == 400)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not create tag, tag does already exist... this would create a dublicate tag", "application/json");
-            }
-            else if (status > 0)
+            if (rowsAffected > 0)
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created Tag.", "application/json");
             }
             else // is dit niet overbodig zoek uit
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "creating Tag failed.", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "creating Tag failed, tag might already exist", "application/json");
             }
         }
 
@@ -90,7 +83,7 @@ namespace GildtAPI.Functions
 
             if (rowsAffected == 0)
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Deleting TAGS failed: Tag does not exist", "application/json");
+                return req.CreateResponse(HttpStatusCode.NotFound, $"Deleting TAG failed: Tag does not exist", "application/json");
             }
 
             else

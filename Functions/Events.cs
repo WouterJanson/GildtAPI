@@ -49,7 +49,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.NotFound, "Event could not be found by the given ID", "application/json");
             }
 
-            return req.CreateResponse(HttpStatusCode.OK, evenT);
+            return req.CreateResponse(HttpStatusCode.OK, evenT, "application/json");
         }
 
 
@@ -72,7 +72,7 @@ namespace GildtAPI.Functions
             }
             else
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the event", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the event, check if the specified id is correct", "application/json");
             }
 
         }
@@ -102,9 +102,9 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all required fields are filled in. Be sure that name, location and dates are filled in...", "application/json");
             }
 
-            int status = await EventController.Instance.CreateEvent(evenT);
+            int rowsAffected = await EventController.Instance.CreateEvent(evenT);
 
-            if (status > 0)
+            if (rowsAffected > 0)
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created event.", "application/json");
             }
@@ -145,7 +145,7 @@ namespace GildtAPI.Functions
             }
             else
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed.", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed, check if the specified id is correct", "application/json");
             }
         }
 
@@ -165,28 +165,16 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-            int status = await EventController.Instance.AddTagToEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+            int rowsAffected = await EventController.Instance.AddTagToEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
-            //error handling 
-            if (status == 400)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the event does not exist...", "application/json");
-            }
-            else if (status == 401)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag does not exist...", "application/json");
-            }
-            else if (status == 402)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not add the tag to the event, the tag is already assigned to the specified Event...", "application/json");
-            }
-            else if (status > 0)
+
+            if (rowsAffected > 0)
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added Tag the the Event!", "application/json");
             }
             else
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed.", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed, check if the specified id's are correct", "application/json");
             }
         }
 
@@ -206,24 +194,15 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-            int status = await EventController.Instance.RemoveTagFromEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+            int rowsAffected = await EventController.Instance.RemoveTagFromEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
-            //error handling 
-            if (status == 400)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not remove tag from the event, the event does not exist...", "application/json");
-            }
-            else if (status == 401)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Could not remove tag from the event, the tag does not exist...", "application/json");
-            }
-            else if (status > 0)
+            if (rowsAffected > 0)
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully removed the Tag from the Event!", "application/json");
             }
             else
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "removing Tag failed.", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "removing Tag failed, check if the specified id's are correct", "application/json");
             }
         }
 

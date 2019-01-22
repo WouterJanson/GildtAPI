@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
+﻿using System.Data.SqlClient;
 using System.Threading.Tasks;
-using GildtAPI.Model;
 
 namespace GildtAPI.DAO
 {
@@ -28,7 +25,6 @@ namespace GildtAPI.DAO
 
         public async Task<int> Createtag(string tag)
         {
-            int TagAlreadyExist = 400;
             int RowsAffected;
 
             // Queries
@@ -48,7 +44,7 @@ namespace GildtAPI.DAO
                     if (reader.HasRows)
                     {
                         DBConnect.Dispose(conn);
-                        return TagAlreadyExist;
+                        return 0;
                     }
                     reader.Close();
                 }

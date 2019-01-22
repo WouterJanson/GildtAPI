@@ -152,9 +152,6 @@ namespace GildtAPI.DAO
 
         public async Task<int> AddTagToEvent(int eventId, int tagId)
         {
-            int EventDoesNotExist = 400;
-            int TagDoesNotExist = 401;
-            int TagAlreadyAssigned = 402;
             int RowsAffected;
 
             // Queries
@@ -170,7 +167,7 @@ namespace GildtAPI.DAO
             //check if event exist
             if (DesiredEvent == null)
             {
-                return EventDoesNotExist;
+                return 0;
             }
 
             // check if tag is already assigned to the event to avoid duplicate tags
@@ -178,7 +175,7 @@ namespace GildtAPI.DAO
             {
                 if (DesiredEvent.Tags[i].Id == tagId)
                 {
-                    return TagAlreadyAssigned;
+                    return 0;
                 }
             }
 
@@ -193,7 +190,7 @@ namespace GildtAPI.DAO
                     if (reader.HasRows == false)
                     {
                         DBConnect.Dispose(conn);
-                        return TagDoesNotExist;
+                        return 0;
                     }
                     reader.Close();
                 }
@@ -215,8 +212,6 @@ namespace GildtAPI.DAO
 
         public async Task<int> RemoveTagFromEvent(int eventId, int tagId)
         {
-            int EventDoesNotExist = 400;
-            int TagDoesNotExist = 401;
             int RowsAffected;
 
             // Queries
@@ -232,7 +227,7 @@ namespace GildtAPI.DAO
             //check if event exist
             if (DesiredEvent == null)
             {
-                return EventDoesNotExist;
+                return 0;
             }
 
             //check if given tag exist
@@ -246,7 +241,7 @@ namespace GildtAPI.DAO
                     if (reader.HasRows == false)
                     {
                         DBConnect.Dispose(conn);
-                        return TagDoesNotExist;
+                        return 0;
                     }
                     reader.Close();
                 }
