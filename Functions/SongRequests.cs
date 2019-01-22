@@ -148,77 +148,17 @@ namespace GildtAPI.Functions
             HttpRequestMessage req, string RequestId, string UserId,
            ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-            int vote = 1;
-
-            //rij toevoegen als die nog niet bestaat
-            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values ('{RequestId}', '{UserId}', '{vote}')";
-
-            //alle songrequests met een upvote
-            var sqlGet1 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '1' ";
-            //alle songrequests met een downvote
-            var sqlGet2 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '-1' ";
-
-            //update downvote naar upvote
-            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
-                                $"Vote = {vote} " +
-                                $" WHERE RequestId = {RequestId} AND UserId = {UserId};";
-
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-
-            using (SqlCommand cmd2 = new SqlCommand(sqlGet1, conn))
-            //check if user have already upvoted
-            using (SqlDataReader reader = cmd2.ExecuteReader())
+            // Check if id is valid
+            if (!GlobalFunctions.CheckValidId(UserId, RequestId))
             {
-                if (reader.HasRows)
-                {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "You've already up voted for this song");
-                }
-                reader.Close();
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            // Update usersvote to upvote if it where downvote
-            using (SqlCommand cmd3 = new SqlCommand(sqlGet2, conn))
+            int rowsAffected = await SongRequestController.Instance.UpVote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
 
-            using (SqlDataReader reader = cmd3.ExecuteReader())
-            {
-                // controlleer of er al een vote was in dit geval downvote
-                if (reader.HasRows)
-                {
-                    reader.Close();
-                    // update database row
-                    using (SqlCommand cmd4 = new SqlCommand(sqlUpdateVote, conn))
-                    {
-                        cmd4.ExecuteReader();
-                        DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.OK, "User has now a Upvote for this song");
-
-                    }
-                }
-            }
-
-
-            // insert a usersvote to a song
-            using (SqlCommand cmd5 = new SqlCommand(sqlStr, conn))
-            {
-                try
-                {
-                    cmd5.ExecuteReader();
-                    DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.OK, "User has upvoted this song (NEW)");
-                }
-                catch (Exception e)
-                {
-                    return req.CreateErrorResponse(HttpStatusCode.NotFound, "An error has occured  " + e.Message);
-                }
-
-            }
+            return rowsAffected > 0
+                ? req.CreateResponse(HttpStatusCode.OK, "Successfully Voted.", "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
 
         }
 
@@ -228,94 +168,15 @@ namespace GildtAPI.Functions
             HttpRequestMessage req, string RequestId, string UserId,
               ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-            int vote = -1;
-
-            //controleren of opgegeven request id niet kleiner dan 0 is en numeric is
-            if (!int.TryParse(RequestId, out int requestId) || requestId < 0)
+            if (!GlobalFunctions.CheckValidId(UserId, RequestId))
             {
-                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured - request id");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
-            //controleren of opgegeven user id niet kleiner dan 0 is en numeric is
-            if (!int.TryParse(UserId, out int userId) || userId < 0)
-            {
-                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "An error has occured - user id ");
-            }
+            int rowsAffected = await SongRequestController.Instance.Downvote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
 
-            //rij toevoegen als die nog niet bestaat
-
-            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values ('{RequestId}', '{UserId}', '{vote}')";
-
-            //alle songrequests met een downvote
-            var sqlGet1 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '-1' ";
-            //alle songrequests met een upvote
-            var sqlGet2 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '1' ";
-            //update van upvote naar downvote
-            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
-                                $"Vote = {vote} " +
-                                $" WHERE RequestId = {RequestId} AND UserId = {UserId};";
-
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-
-            using (SqlCommand cmd2 = new SqlCommand(sqlGet1, conn))
-            //check if user have already upvoted
-            using (SqlDataReader reader = cmd2.ExecuteReader())
-            {
-
-                if (reader.HasRows)
-                {
-                    // Close the database connection
-                    DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.BadRequest, "You've already downvoted for this song");
-                }
-                reader.Close();
-
-            }
-
-            // Update usersvote to upvote if it where downvote
-            using (SqlCommand cmd3 = new SqlCommand(sqlGet2, conn))
-
-            using (SqlDataReader reader = cmd3.ExecuteReader())
-            {
-
-                // controlleer of er al een vote was in dit geval downvote
-                if (reader.HasRows)
-                {
-                    reader.Close();
-                    // update database row
-                    using (SqlCommand cmd4 = new SqlCommand(sqlUpdateVote, conn))
-                    {
-                        cmd4.ExecuteReader();
-                        DBConnect.Dispose(conn);
-                        return req.CreateResponse(HttpStatusCode.OK, "User has now a downvote for this song");
-
-                    }
-
-                }
-
-            }
-
-
-            // insert a usersvote to a song
-            using (SqlCommand cmd5 = new SqlCommand(sqlStr, conn))
-            {
-                try
-                {
-                    cmd5.ExecuteReader();
-                    DBConnect.Dispose(conn);
-                    return req.CreateResponse(HttpStatusCode.OK, "User has downvoted this song (NEW)");
-
-                }
-                catch (Exception e)
-                {
-                    return req.CreateErrorResponse(HttpStatusCode.NotFound, "An error has occured  " + e.Message);
-                }
-
-            }
+            return rowsAffected > 0
+                ? req.CreateResponse(HttpStatusCode.OK, "Successfully Voted.", "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
 
         }
     }

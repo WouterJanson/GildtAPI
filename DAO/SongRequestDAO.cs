@@ -64,9 +64,151 @@ namespace GildtAPI.DAO
 
         public async Task<int> Upvote(int RequestId, int UserId)
         {
-            int i = 0;
+            int vote = 1;
+            int rowsAffected;
 
-            return i;
+            //rij toevoegen als die nog niet bestaat
+            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values ('{RequestId}', '{UserId}', '{vote}')";
+
+            //alle songrequests met een upvote
+            var sqlGet1 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '1' ";
+            //alle songrequests met een downvote
+            var sqlGet2 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '-1' ";
+
+            //update downvote naar upvote
+            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
+                                $"Vote = {vote} " +
+                                $" WHERE RequestId = {RequestId} AND UserId = {UserId};";
+
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+
+            using (SqlCommand cmd2 = new SqlCommand(sqlGet1, conn))
+            //check if user have already upvoted
+            using (SqlDataReader reader = cmd2.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    DBConnect.Dispose(conn);
+                    return 0;
+                }
+                reader.Close();
+
+            }
+
+            // Update usersvote to upvote if it where downvote
+            using (SqlCommand cmd3 = new SqlCommand(sqlGet2, conn))
+
+            using (SqlDataReader reader = cmd3.ExecuteReader())
+            {
+                // controleer of er al een vote was in dit geval downvote
+                if (reader.HasRows)
+                {
+                    reader.Close();
+                    // update database row
+                    using (SqlCommand cmd4 = new SqlCommand(sqlUpdateVote, conn))
+                    {
+                        rowsAffected = await cmd4.ExecuteNonQueryAsync();
+                        DBConnect.Dispose(conn);
+                        return rowsAffected;
+
+                    }
+                }
+            }
+
+
+            // insert a usersvote to a song
+            using (SqlCommand cmd5 = new SqlCommand(sqlStr, conn))
+            {
+                try
+                {
+                    rowsAffected = await cmd5.ExecuteNonQueryAsync();
+                    DBConnect.Dispose(conn);
+                    return rowsAffected;
+                }
+                catch (Exception e)
+                {
+                    return 0;
+                }
+
+            }
+        }
+
+        public async Task<int> Downvote(int RequestId, int UserId)
+        {
+            int vote = -1;
+            int rowsAffected;
+            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values ('{RequestId}', '{UserId}', '{vote}')";
+
+            //alle songrequests met een downvote
+            var sqlGet1 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '-1' ";
+            //alle songrequests met een upvote
+            var sqlGet2 = $"SELECT RequestId, UserId, Vote FROM SongRequestUserVotes WHERE RequestId = '{RequestId}' AND UserId = '{UserId}' AND Vote = '1' ";
+            //update van upvote naar downvote
+            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
+                                $"Vote = {vote} " +
+                                $" WHERE RequestId = {RequestId} AND UserId = {UserId};";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+
+            using (SqlCommand cmd2 = new SqlCommand(sqlGet1, conn))
+            //check if user have already upvoted
+            using (SqlDataReader reader = cmd2.ExecuteReader())
+            {
+
+                if (reader.HasRows)
+                {
+                    // Close the database connection
+                    DBConnect.Dispose(conn);
+                    return 0;
+                }
+                reader.Close();
+
+            }
+
+            // Update usersvote to upvote if it where downvote
+            using (SqlCommand cmd3 = new SqlCommand(sqlGet2, conn))
+
+            using (SqlDataReader reader = cmd3.ExecuteReader())
+            {
+
+                // controlleer of er al een vote was in dit geval downvote
+                if (reader.HasRows)
+                {
+                    reader.Close();
+                    // update database row
+                    using (SqlCommand cmd4 = new SqlCommand(sqlUpdateVote, conn))
+                    {
+                        rowsAffected = await cmd4.ExecuteNonQueryAsync();
+                        DBConnect.Dispose(conn);
+                        return rowsAffected;
+                    }
+
+                }
+
+            }
+
+
+            // insert a usersvote to a song
+            using (SqlCommand cmd5 = new SqlCommand(sqlStr, conn))
+            {
+                try
+                {
+                    rowsAffected = await cmd5.ExecuteNonQueryAsync();
+                    DBConnect.Dispose(conn);
+                    return rowsAffected;
+
+
+                }
+                catch (Exception e)
+                {
+                    return 0;
+                }
+
+            }
         }
 
         public async Task<int> AddSongRequest(SongRequest song)
