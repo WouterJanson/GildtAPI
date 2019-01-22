@@ -8,8 +8,6 @@ namespace GildtAPI.DAO
 {
     class TagDAO : Singleton<TagDAO>
     {
-        EventDAO eventDAO;
-
         public async Task<int> DeleteTag(int Id)
         {
             //queries
@@ -25,7 +23,6 @@ namespace GildtAPI.DAO
             }
 
             DBConnect.Dispose(conn);
-
             return rowsAffected;
         }
 
@@ -90,7 +87,6 @@ namespace GildtAPI.DAO
 
             // Close the database connection
             DBConnect.Dispose(conn);
-
             return RowsAffected;
         }
     }

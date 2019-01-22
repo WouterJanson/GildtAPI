@@ -26,7 +26,6 @@ namespace GildtAPI.DAO
             return events;
         }
 
-        // Get single user
         public async Task<Event> GetTheEvent(int id)
         {
             List<Event> eventslist = await GetAllEvents();
@@ -66,7 +65,6 @@ namespace GildtAPI.DAO
 
         public async Task<int> CreateEvent(Event evenT)
         {
-            int EventAlreadyExist = 400; // komt meerdere keren voor, kan dit in een methode ?
             int RowsAffected;
 
             List<Event> eventsList = await GetAllEvents();
@@ -76,7 +74,7 @@ namespace GildtAPI.DAO
             {
                 if (e.Name == evenT.Name && e.StartDate == evenT.StartDate)
                 {
-                    return EventAlreadyExist;
+                    return 0;
                 }
             }
 
@@ -122,8 +120,8 @@ namespace GildtAPI.DAO
             string sqlStr = $"UPDATE Events SET " +
             $"Name = COALESCE({(evenT.Name == null ? "NULL" : "@Name")}, Name), " +
             $"Location = COALESCE({(evenT.Location == null ? "NULL" : "@Location")}, Location), " +
-            $"StartDate = COALESCE({(evenT.StartDate == null ? "NULL" : "@StartDate")}, StartDate), " +
-            $"EndDate = COALESCE({(evenT.EndDate == null ? "NULL" : "@EndDate")}, EndDate), " +
+            $"StartDate = COALESCE({(evenT.StartDate == DateTime.MinValue ? "NULL" : "@StartDate")}, StartDate), " +
+            $"EndDate = COALESCE({(evenT.EndDate == DateTime.MinValue ? "NULL" : "@EndDate")}, EndDate), " +
             $"ShortDescription = COALESCE({(evenT.ShortDescription == null ? "NULL" : "@ShortDescription")}, ShortDescription), " +
             $"LongDescription = COALESCE({(evenT.LongDescription == null ? "NULL" : "@LongDescription")}, LongDescription), " +
             $"Image = COALESCE({(evenT.Image == null ? "NULL" : "@Image")}, image), " +
@@ -146,7 +144,6 @@ namespace GildtAPI.DAO
 
                 RowsAffected = await cmd.ExecuteNonQueryAsync();
             }
-
             // Close the database connection
             DBConnect.Dispose(conn);
 
@@ -176,6 +173,7 @@ namespace GildtAPI.DAO
                 return EventDoesNotExist;
             }
 
+            // check if tag is already assigned to the event to avoid duplicate tags
             for (int i = 0; i < DesiredEvent.Tags.Length; i++)
             {
                 if (DesiredEvent.Tags[i].Id == tagId)
@@ -254,7 +252,7 @@ namespace GildtAPI.DAO
                 }
             }
 
-            //execute operation if everything is OK
+            //Proceed to remove if everything is OK
             using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
             {
                 cmd2.Parameters.AddWithValue("@tagId", tagId);
