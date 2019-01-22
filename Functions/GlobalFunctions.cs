@@ -11,10 +11,20 @@ namespace GildtAPI
         {
             try
             {
+                // Checks if the id is not empty
                 if (id != null)
                 {
                     int Id = Convert.ToInt32(id);
-                    return true;
+
+                    // Checks if the id is 0 or larger
+                    if(Id >= 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
             }
             catch
