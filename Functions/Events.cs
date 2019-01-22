@@ -104,29 +104,11 @@ namespace GildtAPI.Functions
             evenT.LongDescription = formData["longdescription"];
             evenT.Image = formData["image"];
 
-            //Checks if the required input fields are filled in <<-- kan dit in een methode ?
-            if (evenT.Name == null)
-            {
-                missingFields.Add("Event Name");
-            }
-            if (evenT.Location == null)
-            {
-                missingFields.Add("Location");
-            }
-            if (evenT.StartDate == null)
-            {
-                missingFields.Add("DateTime Start");
-            }
-            if (evenT.EndDate == null)
-            {
-                missingFields.Add("DateTime End");
-            }
+            bool inputIsValid = GlobalFunctions.CheckInputs(evenT.Name, evenT.Location, evenT.StartDate.ToString(), evenT.EndDate.ToString());
 
-            // Returns bad request if one of the input fields are not filled in, gives back a status 400
-            if (missingFields.Any())
+            if (!inputIsValid)
             {
-                string missingFieldsSummary = String.Join(", ", missingFields);
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all required fields are filled in. Be sure that name, location and dates are filled in...", "application/json");
             }
 
             int status = await EventController.Instance.CreateEvent(evenT);
@@ -164,10 +146,10 @@ namespace GildtAPI.Functions
             evenT.LongDescription = formData["longdescription"];
             evenT.Image = formData["image"];
 
-            //check if id is numeric, if it is a number it will give back true if not false
-            if (Regex.IsMatch(id, @"^\d+$") == false) 
+            // Check if id is valid
+            if (!GlobalFunctions.CheckValidId(id))
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid input, id should be numeric and not negative"); // status 400
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters");
             }
 
             int RowsAffected = await EventController.Instance.EditEvent(evenT);
@@ -221,7 +203,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added Tag the the Event!");
             }
-            else // is dit niet overbodig zoek uit
+            else
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed.");
             }
@@ -235,9 +217,7 @@ namespace GildtAPI.Functions
         {
 
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            Tag tag = new Tag(0, "");
-            tag.Name = formData["Name"];
-            tag.Id = Convert.ToInt32(id);
+            string tag = formData["Name"];
 
             //check if id is numeric, if it is a number it will give back true if not false
             if (Regex.IsMatch(id, @"^\d+$") == false)
@@ -245,14 +225,13 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
             }
 
-            int rowsAffected = await EventController.Instance.EditTag(tag);
+            int rowsAffected = await EventController.Instance.EditTag(tag,id);
 
             //controleren of er rows in de DB zijn aangepast return 400
             if (rowsAffected == 0)
             {
                 return req.CreateErrorResponse(HttpStatusCode.BadRequest, $"Edit Tags failed: Tag does not exist.");
             }
-
             else
             {
                 //waardes in DB aangepast return 200
@@ -272,18 +251,11 @@ namespace GildtAPI.Functions
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
             string tag = formData["tag"];
 
+            bool inputIsValid = GlobalFunctions.CheckInputs(tag);
 
-            //Checks if the input fields are filled in
-            if (tag == "" || tag == null)
+            if (!inputIsValid)
             {
-                missingFields.Add("Tag");
-            }
-
-            // Returns bad request if one of the input fields are not filled in
-            if (missingFields.Any())
-            {
-                string missingFieldsSummary = String.Join(", ", missingFields);
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Tag name is not filled in", "application/json");
             }
 
             int status = await EventController.Instance.CreateTag(tag);
@@ -307,12 +279,12 @@ namespace GildtAPI.Functions
         public static async Task<HttpResponseMessage> DeleteTags(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Delete/{id}")] HttpRequestMessage req,
             ILogger log, string id)
-        {           
+        {
 
-            //check if id is numeric, if it is a number it will give back true if not false
-            if (Regex.IsMatch(id, @"^\d+$") == false)
+            // Check if id is valid
+            if (!GlobalFunctions.CheckValidId(id))
             {
-               return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters");
             }
 
             int rowsAffected = await EventController.Instance.DeleteTag(Convert.ToInt32(id));

@@ -190,14 +190,14 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> EditTag(Tag tag)
+        public async Task<int> EditTag(string tag, string id)
         {
             int RowsAffected;
 
             //query om te updaten
             string sqlStrUpdate = $"UPDATE Tags SET " +
-                                  $"Name = COALESCE({(tag.Name == null ? "NULL" : $"'{tag.Name}'")}, Name)" +
-                                  $"Where Id= {tag.Id}";
+                                  $"Name = COALESCE({(tag == null ? "NULL" : $"'{tag}'")}, Name)" +
+                                  $"Where Id= {id}";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
