@@ -159,9 +159,6 @@ namespace GildtAPI.DAO
             // querry to validate Tag (does it exist?)
             string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
 
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
             Event DesiredEvent = await GetTheEvent(eventId);
 
             //check if event exist
@@ -179,6 +176,9 @@ namespace GildtAPI.DAO
                 }
             }
 
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
             //check if given tag exist
             using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
             {
@@ -186,7 +186,7 @@ namespace GildtAPI.DAO
 
                 using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    // check if the query has found a tag with the given TagId
+                    // check if the query has found a tag with the given TagId, IF SO also close dbconnection otherwise keep it open
                     if (reader.HasRows == false)
                     {
                         DBConnect.Dispose(conn);
@@ -217,10 +217,7 @@ namespace GildtAPI.DAO
             // Queries
             string sqlStr = $"DELETE EventsTags WHERE EventsId = @eventId AND TagsId = @tagId";
             // querry to validate Tag (does it exist?)
-            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";           
 
             Event DesiredEvent = await GetTheEvent(eventId);
 
@@ -230,6 +227,9 @@ namespace GildtAPI.DAO
                 return 0;
             }
 
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
             //check if given tag exist
             using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
             {
@@ -237,7 +237,7 @@ namespace GildtAPI.DAO
 
                 using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    // check if the query has found a tag with the given TagId
+                    // check if the query has found a tag with the given TagId,IF SO also close dbconnection otherwise keep it open
                     if (reader.HasRows == false)
                     {
                         DBConnect.Dispose(conn);
@@ -293,7 +293,7 @@ namespace GildtAPI.DAO
                         currentEvent = newEvent;
                     }
 
-                    // check if reader got a new event
+                    // keep checking if a unique event has been read, if so save the gathered tags to the previous event and make a new list(tags) for the new event
                     if (currentEvent.Id != newEvent.Id)
                     {
                         currentEvent.Tags = currentEventTagsList.ToArray(); //sla alle tags in de list van "currentEventTags" op in current event.tags zodra een nieuwe event binnenkomt.                       
