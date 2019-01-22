@@ -16,7 +16,7 @@ namespace GildtAPI.DAO
 
         public async Task<List<SongRequest>> GetAllSongrequests()
         {
-            var sqlAllRequests =
+            string sqlAllRequests =
                 $"SELECT sr.Id AS RequestId,sr.DateTime ,sr.UserId, sr.Title, sr.Artist," +
                 " CASE WHEN uv.Upvotes IS NULL THEN 0 ELSE uv.Upvotes END as Upvotes, CASE WHEN dv.Downvotes IS NULL THEN 0 ELSE dv.Downvotes END as Downvotes " +
                 "FROM SongRequest AS sr " +
@@ -53,7 +53,7 @@ namespace GildtAPI.DAO
         public async Task<int> DeleteSongrequest(int id)
         {
             int rowsAffected;
-            var sqlStr = $"DELETE SongRequest WHERE Id = @id";
+            string sqlStr = $"DELETE SongRequest WHERE Id = @id";
             SqlConnection conn = DBConnect.GetConnection();
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
@@ -68,12 +68,12 @@ namespace GildtAPI.DAO
             int vote = 1;
             int rowsAffected;
 
-            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
+            string sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
                                 $"Vote = @vote " +
                                 $" WHERE RequestId = @RequestId AND UserId = @UserId;";
 
             //rij toevoegen als die nog niet bestaat
-            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values (@RequestId, @UserId, @vote)";
+            string sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values (@RequestId, @UserId, @vote)";
 
             //Connects with the database
             SqlConnection conn = DBConnect.GetConnection();
@@ -116,11 +116,11 @@ namespace GildtAPI.DAO
             int vote = -1;
             int rowsAffected;
             //update van upvote naar downvote
-            var sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
+            string sqlUpdateVote = $"UPDATE SongRequestUserVotes SET " +
                                 $"Vote = @vote " +
                                 $" WHERE RequestId = @RequestId AND UserId = @UserId;";
             //insert nieuwe rij
-            var sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values (@RequestId, @UserId, @vote)";
+            string sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values (@RequestId, @UserId, @vote)";
 
             SqlConnection conn = DBConnect.GetConnection();
 
