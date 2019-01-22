@@ -86,58 +86,36 @@ namespace GildtAPI.Functions
             ILogger log)
         {
 
-            ////////////////////////////////////////////////
-            /// ////////////////////////////////////////
-            /// /////////////////////////////////////
-            ///     ////////////////
-            ///     ////////
-            /// TO DO
+        
             SongRequest song = new SongRequest();
 
             List<string> missingFields = new List<string>();
 
-            // Read data from input
+            
+
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string Title = formData["Title"];
-            string Artist = formData["Artist"];
-            string UserId = formData["UserId"];
-
-            //Checks if the input fields are filled in
-            if (Title == null)
+            if (!GlobalFunctions.CheckValidId(formData["UserId"]))
             {
-                missingFields.Add("Title");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
+            }
+            song.Title = formData["Title"];
+            song.Artist = formData["Artist"];
+            song.DateTime = Convert.ToDateTime(formData["DateTime"]);
+            song.UserId = Convert.ToInt32(formData["UserId"]);
+
+            bool input = GlobalFunctions.CheckInputs(song.Title, song.Artist, song.DateTime.ToString(),song.UserId.ToString());
+            if (!input)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, $"Fields are not filled in.", "application/json");
+            }
+           
+            int rowsAffected = await SongRequestController.Instance.AddSongRequest(song);
+            if (rowsAffected == 0)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Error couldn't add, check input fields.", "application/json");
             }
 
-            if (UserId == null)
-            {
-                missingFields.Add("UserId");
-            }
-
-            if (Artist == null)
-            {
-                missingFields.Add("Artist");
-            }
-
-            // Als er velden ontbreken return 400 badrequest
-            if (missingFields.Any())
-            {
-                string missingFieldsSummary = String.Join(", ", missingFields);
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Missing field(s): {missingFieldsSummary}");
-            }
-
-            //controleren of userId niet kleinder is als 0 of als input niet numeric zijn
-            if (!int.TryParse(UserId, out int userId) || userId < 0)
-            {
-                //return 400 
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"UserId is not a valid number.");
-            }
-
-            int i = await SongRequestController.Instance.AddSongRequest(song);
-            if (i == 0)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "oops something went wrong. try again.");
-            }
-            return req.CreateResponse(HttpStatusCode.OK, "Successfully added the song request");
+            return req.CreateResponse(HttpStatusCode.OK, "Successfully added songrequest .", "application/json");
 
 
         }

@@ -213,22 +213,28 @@ namespace GildtAPI.DAO
 
         public async Task<int> AddSongRequest(SongRequest song)
         {
-            int rowsaffected;
+            int rowsAffected;
 
             var sqlStr =
                 $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
-                $"VALUES ('{song.Title}', '{song.Artist}', '{DateTime.UtcNow}', '{song.UserId}')";
+                $"VALUES (@Title, @Artist, @DateTime, @UserId)";
+            // (@Title, @Artist, @DateTime, @UserId)
+            //('{song.Title}', '{song.Artist}', '{DateTime.UtcNow}', '{song.UserId}')
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                rowsaffected = await cmd.ExecuteNonQueryAsync();
+                cmd.Parameters.AddWithValue("@Title", song.Title);
+                cmd.Parameters.AddWithValue("@Artist", song.Artist);
+                cmd.Parameters.AddWithValue("@DateTime", song.DateTime);
+                cmd.Parameters.AddWithValue("@UserId", song.UserId);
+                
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
-            return rowsaffected;
 
-
-            return rowsaffected;
+            DBConnect.Dispose(conn);
+            return rowsAffected;
         }
 
 
