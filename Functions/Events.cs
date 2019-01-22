@@ -46,7 +46,7 @@ namespace GildtAPI.Functions
             // check if a event is found by given id, if not than give a 404 not found
             if (evenT == null)
             {
-                return req.CreateResponse(HttpStatusCode.NotFound, "Event could not be found by the given ID", "application/json"); // application/json -> returnt jason i.p.v text
+                return req.CreateResponse(HttpStatusCode.NotFound, "Event could not be found by the given ID", "application/json");
             }
 
             return req.CreateResponse(HttpStatusCode.OK, evenT);
@@ -104,17 +104,13 @@ namespace GildtAPI.Functions
 
             int status = await EventController.Instance.CreateEvent(evenT);
 
-            if (status == 400)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Event already exist", "application/json");
-            }
-            else if (status > 0)
+            if (status > 0)
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created event.", "application/json");
             }
             else 
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed.", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed, event might already exsist", "application/json");
             }
         }
 
