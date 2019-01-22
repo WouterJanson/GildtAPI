@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using GildtAPI.Model;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using GildtAPI.Controllers;
+using GildtAPI.DAO;
 
 namespace GildtAPI.Functions
 {
@@ -37,40 +39,7 @@ namespace GildtAPI.Functions
                 count = Constants.DEFAULTCOUNT;
             }
 
-            var sqlAttendance =
-                $"SELECT TOP {count} " +
-                    $"att.EventId AS EventId, " +
-                    $"Users.Id as UserId, " +
-                    $"Users.Username AS Username " +
-                $"FROM AttendanceVerification as att " +
-                $"INNER JOIN Users " +
-                    $"ON att.UserId = Users.Id ";
-            var sqlWhere = $"WHERE att.EventId = {eventId}";
-            // Checks if an id parameter is filled in
-            if (eventId != null)
-            {
-                //Add WHERE if id parameter exists
-                sqlAttendance = sqlAttendance + sqlWhere;
-            }
-
-            List<Attendance> attendanceList = new List<Attendance>();
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlAttendance, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    attendanceList.Add(
-                        new Attendance(
-                            int.Parse(reader["UserId"].ToString()),
-                            int.Parse(reader["EventId"].ToString()),
-                            reader["Username"].ToString()));
-                }
-            }
+            List<Attendance> attendanceList = await AttendanceDAO.Instance.GetAttendanceList(eventId, count);
             if (attendanceList.Count == 0)
             {
                 return new BadRequestObjectResult($"No verifications found for event with id = {eventId}");
@@ -78,10 +47,27 @@ namespace GildtAPI.Functions
             string jAttendance = JsonConvert.SerializeObject(attendanceList.ToArray());
             return new OkObjectResult(jAttendance);
         }
+
+
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(Verify))]
         public static async Task<IActionResult> Verify([HttpTrigger(AuthorizationLevel.Anonymous, "post",
             Route = "Attendance/{eventId}/Verify/{userId}")] HttpRequest req, ILogger log,
             int userId, int eventId)
+        {
+            //check if verification exists
+            if (await AttendanceController.Instance.CheckVerification(userId, eventId))
+            {
+                return new BadRequestObjectResult($"Verification already exists for user {userId} and event {eventId}");
+            }
+            else
+            {
+                await NewAttendanceVerification();
+
+                return new OkObjectResult($"Verification succesfully created for {userId}");
+            }
+        }
+
+        private static async Task NewAttendanceVerification()
         {
             // Queries
             //Query to insert new row into AttendanceVerification
@@ -89,102 +75,83 @@ namespace GildtAPI.Functions
             "INSERT INTO AttendanceVerification " +
                 $"(UserId, EventId) " +
             "VALUES " +
-                $"('{userId}', '{eventId}')";
-            //Get query to check if verification already exists
-            var sqlGet =
-            "SELECT COUNT(*) FROM AttendanceVerification " +
-            $"WHERE (UserId = '{userId}' AND EventId = '{eventId}')"; ;
+                $"(@UserId, '@EventId')";
 
             SqlConnection conn = DBConnect.GetConnection();
-            //check if verification exists
-            SqlCommand checkVer = new SqlCommand(sqlGet, conn);
-            checkVer.Parameters.AddWithValue("UserId", userId);
-            checkVer.Parameters.AddWithValue("EventId", eventId);
-            int existingVer = (int)await checkVer.ExecuteScalarAsync();
-            if (existingVer > 0)
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                // Close the database connection
-                DBConnect.Dispose(conn);
-                return new BadRequestObjectResult($"Verification already exists for user {userId} and event {eventId}");
+                await cmd.ExecuteNonQueryAsync();
             }
-            else
-            {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                {
-                    await cmd.ExecuteNonQueryAsync();
-                }
 
-                // Close the database connection
-                DBConnect.Dispose(conn);
-
-                return new OkObjectResult($"Verification succesfully created for {userId}");
-            }
+            // Close the database connection
+            DBConnect.Dispose(conn);
         }
 
-/*        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(CheckVerifications))]
-        public static async Task<IActionResult> CheckVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
-            Route = "Attendance/{eventId?}")] HttpRequest req, ILogger log,
-            int? eventId)
-        {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(CheckVerifications));
 
-            string qCount = req.Query["count"];
-            int count;
-            if (qCount != null)
-            {
-                Int32.TryParse(qCount, out count);
-                if (count < 1)
+        /*        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(CheckVerifications))]
+                public static async Task<IActionResult> CheckVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
+                    Route = "Attendance/{eventId?}")] HttpRequest req, ILogger log,
+                    int? eventId)
                 {
-                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
+                    log.LogInformation("C# HTTP trigger function processed a request: " + nameof(CheckVerifications));
+
+                    string qCount = req.Query["count"];
+                    int count;
+                    if (qCount != null)
+                    {
+                        Int32.TryParse(qCount, out count);
+                        if (count < 1)
+                        {
+                            return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
+                        }
+                    }
+                    else
+                    {
+                        count = Constants.DEFAULTCOUNT;
+                    }
+
+                    var sqlAttendance =
+                        $"SELECT TOP {count} " +
+                            $"att.EventId AS EventId, " +
+                            $"Users.Id as UserId, " +
+                            $"Users.Username AS Username " +
+                        $"FROM AttendanceVerification as att " +
+                        $"INNER JOIN Users " +
+                            $"ON att.UserId = Users.Id ";
+                    var sqlWhere = $"WHERE att.EventId = {eventId}";
+                    // Checks if an id parameter is filled in
+                    if (eventId != null)
+                    {
+                        //Add WHERE if id parameter exists
+                        sqlAttendance = sqlAttendance + sqlWhere;
+                    }
+
+                    List<Attendance> attendanceList = new List<Attendance>();
+
+                    //Connects with the database
+                    SqlConnection conn = DBConnect.GetConnection();
+
+                    using (SqlCommand cmd = new SqlCommand(sqlAttendance, conn))
+                    {
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                        while (reader.Read())
+                        {
+
+                            attendanceList.Add(
+                                new Attendance(
+                                    int.Parse(reader["UserId"].ToString()),
+                                    int.Parse(reader["EventId"].ToString()),
+                                    reader["Username"].ToString()));
+                        }
+                    }
+                    if (attendanceList.Count == 0)
+                    {
+                        return new BadRequestObjectResult($"No verifications found for event with id = {eventId}");
+                    }
+                    string jAttendance = JsonConvert.SerializeObject(attendanceList.ToArray());
+                    return new OkObjectResult(jAttendance);
                 }
-            }
-            else
-            {
-                count = Constants.DEFAULTCOUNT;
-            }
-
-            var sqlAttendance =
-                $"SELECT TOP {count} " +
-                    $"att.EventId AS EventId, " +
-                    $"Users.Id as UserId, " +
-                    $"Users.Username AS Username " +
-                $"FROM AttendanceVerification as att " +
-                $"INNER JOIN Users " +
-                    $"ON att.UserId = Users.Id ";
-            var sqlWhere = $"WHERE att.EventId = {eventId}";
-            // Checks if an id parameter is filled in
-            if (eventId != null)
-            {
-                //Add WHERE if id parameter exists
-                sqlAttendance = sqlAttendance + sqlWhere;
-            }
-
-            List<Attendance> attendanceList = new List<Attendance>();
-
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlAttendance, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    attendanceList.Add(
-                        new Attendance(
-                            int.Parse(reader["UserId"].ToString()),
-                            int.Parse(reader["EventId"].ToString()),
-                            reader["Username"].ToString()));
-                }
-            }
-            if (attendanceList.Count == 0)
-            {
-                return new BadRequestObjectResult($"No verifications found for event with id = {eventId}");
-            }
-            string jAttendance = JsonConvert.SerializeObject(attendanceList.ToArray());
-            return new OkObjectResult(jAttendance);
-        }
-        */
+                */
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(DeleteVerification))]
         public static async Task<IActionResult> DeleteVerification([HttpTrigger(AuthorizationLevel.Anonymous, "delete",
             Route = "Attendance/{eventId}/Delete/{userId}")] HttpRequest req, ILogger log,
