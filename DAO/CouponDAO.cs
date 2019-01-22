@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
@@ -43,7 +44,7 @@ namespace GildtAPI.DAO
         {
             int rowsAffected;
             string sqlStr =
-                $"INSERT INTO Coupons (Name, Description, StartDate, EndDate, Type, TotalUsed, Image) VALUES ('{coupon.Name}', '{coupon.Description}', '{coupon.StartDate}', '{coupon.EndDate}', '{coupon.Type}', '0', '{coupon.Image}')";
+                $"INSERT INTO Coupons (Name, Description, StartDate, EndDate, Type, TotalUsed, Image) VALUES (@Name, @Description, @StartDate, @EndDate, @Type, '0', @Image)";
 
             List<Coupon> couponsList = await GetAll();
 
@@ -59,6 +60,13 @@ namespace GildtAPI.DAO
 
             using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@Name", coupon.Name);
+                cmd.Parameters.AddWithValue("@Description", coupon.Description);
+                cmd.Parameters.AddWithValue("@StartDate", coupon.StartDate);
+                cmd.Parameters.AddWithValue("@EndDate", coupon.EndDate);
+                cmd.Parameters.AddWithValue("@Type", coupon.Type);
+                cmd.Parameters.AddWithValue("@Image", coupon.Image);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 
@@ -70,12 +78,14 @@ namespace GildtAPI.DAO
         public async Task<int> Delete(int id)
         {
             int rowsAffected;
-            string sqlStr = $"DELETE Coupons WHERE Id = '{id}'";
+            string sqlStr = $"DELETE Coupons WHERE Id = @Id";
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@Id", id);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
 
             }
@@ -88,18 +98,26 @@ namespace GildtAPI.DAO
         {
             int rowsAffected;
             string sqlStrUpdate = $"UPDATE Coupons SET " +
-                    $"Name = COALESCE({(coupon.Name == null ? "NULL" : $"'{coupon.Name}'")}, Name), " +
-                    $"Description = COALESCE({(coupon.Description == null ? "NULL" : $"'{coupon.Description}'")}, Description), " +
-                    $"StartDate = COALESCE({(coupon.StartDate.ToString() == null ? "NULL" : $"'{coupon.StartDate.ToString()}'")}, StartDate), " +
-                    $"EndDate = COALESCE({(coupon.EndDate.ToString() == null ? "NULL" : $"'{coupon.EndDate.ToString()}'")}, EndDate), " +
-                    $"Type = COALESCE({(coupon.Type.ToString() == null ? "NULL" : $"'{coupon.Type.ToString()}'")}, Type), " +
-                    $"Image = COALESCE({(coupon.Image == null ? "NULL" : $"'{coupon.Image}'")}, Image) " +
-                    $" WHERE Id = {coupon.Id}";
+                    $"Name = COALESCE({(coupon.Name == null ? "NULL" : "@Name")}, Name), " +
+                    $"Description = COALESCE({(coupon.Description == null ? "NULL" : "@Description")}, Description), " +
+                    $"StartDate = COALESCE({(coupon.StartDate.ToString() == null ? "NULL" : "@StartDate")}, StartDate), " +
+                    $"EndDate = COALESCE({(coupon.EndDate.ToString() == null ? "NULL" : "@EndDate")}, EndDate), " +
+                    $"Type = COALESCE({(coupon.Type.ToString() == null ? "NULL" : "@Type")}, Type), " +
+                    $"Image = COALESCE({(coupon.Image == null ? "NULL" : "@Image")}, Image) " +
+                    $" WHERE Id = @Id";
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
             {
+                cmd.Parameters.AddWithValue("@Id", coupon.Id);
+                cmd.Parameters.AddWithValue("@Name", coupon.Name);
+                cmd.Parameters.AddWithValue("@Description", coupon.Description);
+                cmd.Parameters.AddWithValue("@StartDate", coupon.StartDate);
+                cmd.Parameters.AddWithValue("@EndDate", coupon.EndDate);
+                cmd.Parameters.AddWithValue("@Type", coupon.Type);
+                cmd.Parameters.AddWithValue("@Image", coupon.Image);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 
@@ -108,19 +126,18 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        // @TODO: Finish it up - Check if it's possible to not require the sqlGet method, instead GetAll();
         public async Task<int> Signup(int userId, int couponId)
         {
-            var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES ('{userId}', '{couponId}')";
+            var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES (@UserId, @CouponId)";
             var sqlGet =
-                $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = '{couponId}' AND UserId = '{userId}'";
+                $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = @CouponId AND UserId = @UserId";
             int rowsAffected;
 
             SqlConnection conn = DBConnect.GetConnection();
 
             SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
-            checkCoupon.Parameters.AddWithValue("CouponId", couponId);
-            checkCoupon.Parameters.AddWithValue("UserId", userId);
+            checkCoupon.Parameters.AddWithValue("@CouponId", couponId);
+            checkCoupon.Parameters.AddWithValue("@UserId", userId);
             int CouponExist = (int)checkCoupon.ExecuteScalar();
 
             if (CouponExist > 0)
@@ -131,6 +148,9 @@ namespace GildtAPI.DAO
             {
                 using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
                 {
+                    cmd.Parameters.AddWithValue("@CouponId", couponId);
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+
                     rowsAffected = await cmd.ExecuteNonQueryAsync();
                 }
             }

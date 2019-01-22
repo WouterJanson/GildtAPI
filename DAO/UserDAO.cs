@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Net;
 using System.Threading.Tasks;
@@ -48,12 +49,14 @@ namespace GildtAPI.DAO
         public async Task<int> Delete(int id)
         {
             int rowsAffected;
-            string sqlStr = $"DELETE FROM Users WHERE Users.Id = '{id}'";
+            string sqlStr = $"DELETE FROM Users WHERE Users.Id = @Id";
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@Id", id);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
 
             }
@@ -65,7 +68,7 @@ namespace GildtAPI.DAO
         public async Task<int> Create(User user)
         {
             string sqlStr =
-            $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', '{user.Username}', '{user.Email}', '{user.Password}')";
+            $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', @Username, @Email, @Password)";
             int rowsAffected;
 
             List<User> usersList = await GetAll();
@@ -82,6 +85,10 @@ namespace GildtAPI.DAO
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@Username", user.Username);
+                cmd.Parameters.AddWithValue("@Email", user.Email);
+                cmd.Parameters.AddWithValue("@Password", user.Password);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 
@@ -93,17 +100,23 @@ namespace GildtAPI.DAO
         public async Task<int> Edit(User user)
         {
             string sqlStrUpdate = $"UPDATE Users SET " +
-            $"Username = COALESCE({(user.Username == null ? "NULL" : $"'{user.Username}'")}, Username), " +
-            $"Email = COALESCE({(user.Email == null ? "NULL" : $"'{user.Email}'")}, Email), " +
-            $"Password = COALESCE({(user.Password == null ? "NULL" : $"'{user.Password}'")}, Password), " +
-            $"IsAdmin = COALESCE({(user.IsAdmin.ToString() == null ? "NULL" : $"'{user.IsAdmin.ToString()}'")}, IsAdmin) " +
-            $"WHERE Id = {user.Id}";
+            $"Username = COALESCE({(user.Username == null ? "NULL" : "@Username")}, Username), " +
+            $"Email = COALESCE({(user.Email == null ? "NULL" : "@Email")}, Email), " +
+            $"Password = COALESCE({(user.Password == null ? "NULL" : "@Password")}, Password), " +
+            $"IsAdmin = COALESCE({(user.IsAdmin.ToString() == null ? "NULL" : "@IsAdmin")}, IsAdmin) " +
+            $"WHERE Id = @Id";
             int rowsAffected;
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using(SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
             {
+                cmd.Parameters.AddWithValue("@Id", user.Id);
+                cmd.Parameters.AddWithValue("@Username", user.Username);
+                cmd.Parameters.AddWithValue("@Email", user.Email);
+                cmd.Parameters.AddWithValue("@Password", user.Password);
+                cmd.Parameters.AddWithValue("@IsAdmin", user.IsAdmin);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 

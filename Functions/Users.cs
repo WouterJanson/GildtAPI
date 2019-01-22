@@ -49,7 +49,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteUser")]
         public static async Task<HttpResponseMessage> DeleteUser(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id?}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
             if (!GlobalFunctions.CheckValidId(id))
