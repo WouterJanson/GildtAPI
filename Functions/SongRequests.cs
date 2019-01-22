@@ -25,12 +25,17 @@ namespace GildtAPI.Functions
             ILogger log)
         {
 
-            List<SongRequest> songRequests = await SongRequestController.Instance.GetAll();
-            string json = JsonConvert.SerializeObject(songRequests);
-
-            return songRequests.Count >= 1
-                ? req.CreateResponse(HttpStatusCode.OK, songRequests, "application/json")
-                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+            List<SongRequest> songRequests = await SongRequestController.Instance.GetAllSongrequests();
+            
+            if (songRequests.Count >= 0)
+            {
+                return req.CreateResponse(HttpStatusCode.OK, songRequests, "application/json");
+            }
+            else
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+            }
+           
 
         }
         [FunctionName("SongRequest")]
@@ -38,15 +43,12 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest/{id}")]HttpRequestMessage req,
             ILogger log, string id)
         {
-            try
+            if (!GlobalFunctions.CheckValidId(id))
             {
-                int convId = Convert.ToInt32(id);
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
-            catch
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
-            }
-            SongRequest songRequests = await SongRequestController.Instance.Get(Convert.ToInt32(id));
+
+            SongRequest songRequests = await SongRequestController.Instance.GetSongrequest(Convert.ToInt32(id));
             if (songRequests == null)
             {
                 return req.CreateResponse(HttpStatusCode.NotFound, "Songrequest does not exist");
@@ -69,8 +71,8 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
             }
 
-            int i = await SongRequestController.Instance.Delete(Convert.ToInt32(id));
-            if (i == 0)
+            int rowsAffected = await SongRequestController.Instance.DeleteSongrequest(Convert.ToInt32(id));
+            if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Songrequest does not exist");
             }

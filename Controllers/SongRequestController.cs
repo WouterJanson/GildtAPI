@@ -23,18 +23,18 @@ namespace GildtAPI.Controllers
     class SongRequestController : Singleton<SongRequestController>
     {
 
-        public async Task<List<SongRequest>> GetAll()
+        public async Task<List<SongRequest>> GetAllSongrequests()
         {
-            return await SongRequestDAO.Instance.GetAll();
+            return await SongRequestDAO.Instance.GetAllSongrequests();
         }
-        public async Task<SongRequest> Get(int id)
+        public async Task<SongRequest> GetSongrequest(int id)
         {
-            return await SongRequestDAO.Instance.Get(id);
+            return await SongRequestDAO.Instance.GetSongrequest(id);
         }
 
-        public async Task<int> Delete(int id)
+        public async Task<int> DeleteSongrequest(int id)
         {
-            return await SongRequestDAO.Instance.Delete(id);
+            return await SongRequestDAO.Instance.DeleteSongrequest(id);
         }
 
         public async Task<int> AddSongRequest(SongRequest song)
