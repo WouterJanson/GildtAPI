@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
-using System.Linq;
 using GildtAPI.Model;
 using GildtAPI.Controllers;
 

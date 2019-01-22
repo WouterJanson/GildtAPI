@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace GildtAPI
 {
@@ -16,7 +14,7 @@ namespace GildtAPI
                 {
                     int Id = Convert.ToInt32(id);
 
-                    // Checks if the id is 0 or larger
+                    // Checks if the id is a positive number
                     if(Id >= 0)
                     {
                         return true;
