@@ -48,6 +48,37 @@ namespace GildtAPI.Functions
             return new OkObjectResult(jAttendance);
         }
 
+        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(GetUserVerifications))]
+        public static async Task<IActionResult> GetUserVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
+            Route = "User/{userId}/Attendance/")] HttpRequest req, ILogger log,
+            int userId)
+        
+{
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetUserVerifications));
+
+            string qCount = req.Query["count"];
+            int count;
+            if (qCount != null)
+            {
+                Int32.TryParse(qCount, out count);
+                if (count < 1)
+                {
+                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
+                }
+            }
+            else
+            {
+                count = Constants.DEFAULTCOUNT;
+            }
+
+            List<Attendance> attendanceList = await AttendanceDAO.Instance.GetUserAttendanceList(userId, count);
+            if (attendanceList.Count == 0)
+            {
+                return new BadRequestObjectResult($"No verifications found for user#{userId}");
+            }
+            string jAttendance = JsonConvert.SerializeObject(attendanceList.ToArray());
+            return new OkObjectResult(jAttendance);
+        }
 
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(Verify))]
         public static async Task<IActionResult> Verify([HttpTrigger(AuthorizationLevel.Anonymous, "post",
@@ -55,146 +86,57 @@ namespace GildtAPI.Functions
             int userId, int eventId)
         {
             //check if verification exists
-            if (await AttendanceController.Instance.CheckVerification(userId, eventId))
+            if (await AttendanceDAO.Instance.CheckVerification(userId, eventId))
             {
-                return new BadRequestObjectResult($"Verification already exists for user {userId} and event {eventId}");
+                return new BadRequestObjectResult($"Verification already exists for user #{userId} at event #{eventId}");
             }
             else
             {
-                await NewAttendanceVerification();
-
-                return new OkObjectResult($"Verification succesfully created for {userId}");
-            }
-        }
-
-        private static async Task NewAttendanceVerification()
-        {
-            // Queries
-            //Query to insert new row into AttendanceVerification
-            var sqlStr =
-            "INSERT INTO AttendanceVerification " +
-                $"(UserId, EventId) " +
-            "VALUES " +
-                $"(@UserId, '@EventId')";
-
-            SqlConnection conn = DBConnect.GetConnection();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                await cmd.ExecuteNonQueryAsync();
-            }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
-        }
-
-
-        /*        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(CheckVerifications))]
-                public static async Task<IActionResult> CheckVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
-                    Route = "Attendance/{eventId?}")] HttpRequest req, ILogger log,
-                    int? eventId)
+                try
                 {
-                    log.LogInformation("C# HTTP trigger function processed a request: " + nameof(CheckVerifications));
-
-                    string qCount = req.Query["count"];
-                    int count;
-                    if (qCount != null)
-                    {
-                        Int32.TryParse(qCount, out count);
-                        if (count < 1)
-                        {
-                            return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
-                        }
-                    }
-                    else
-                    {
-                        count = Constants.DEFAULTCOUNT;
-                    }
-
-                    var sqlAttendance =
-                        $"SELECT TOP {count} " +
-                            $"att.EventId AS EventId, " +
-                            $"Users.Id as UserId, " +
-                            $"Users.Username AS Username " +
-                        $"FROM AttendanceVerification as att " +
-                        $"INNER JOIN Users " +
-                            $"ON att.UserId = Users.Id ";
-                    var sqlWhere = $"WHERE att.EventId = {eventId}";
-                    // Checks if an id parameter is filled in
-                    if (eventId != null)
-                    {
-                        //Add WHERE if id parameter exists
-                        sqlAttendance = sqlAttendance + sqlWhere;
-                    }
-
-                    List<Attendance> attendanceList = new List<Attendance>();
-
-                    //Connects with the database
-                    SqlConnection conn = DBConnect.GetConnection();
-
-                    using (SqlCommand cmd = new SqlCommand(sqlAttendance, conn))
-                    {
-                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                        while (reader.Read())
-                        {
-
-                            attendanceList.Add(
-                                new Attendance(
-                                    int.Parse(reader["UserId"].ToString()),
-                                    int.Parse(reader["EventId"].ToString()),
-                                    reader["Username"].ToString()));
-                        }
-                    }
-                    if (attendanceList.Count == 0)
-                    {
-                        return new BadRequestObjectResult($"No verifications found for event with id = {eventId}");
-                    }
-                    string jAttendance = JsonConvert.SerializeObject(attendanceList.ToArray());
-                    return new OkObjectResult(jAttendance);
+                    await AttendanceDAO.Instance.CreateVerification(userId, eventId);
                 }
-                */
+                catch
+                {
+                    return new BadRequestObjectResult($"Something went wrong while trying to add verification for user #{userId} at event {eventId}");
+                }
+
+                return new OkObjectResult($"Verification succesfully created for {userId} at event {eventId}");
+            }
+        }
+
         [FunctionName(nameof(AttendanceVerification) + "-" + nameof(DeleteVerification))]
         public static async Task<IActionResult> DeleteVerification([HttpTrigger(AuthorizationLevel.Anonymous, "delete",
             Route = "Attendance/{eventId}/Delete/{userId}")] HttpRequest req, ILogger log,
-            int userId, int eventId){
+            int userId, int eventId)
+        {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteVerification)}");
             if (eventId < 1 || userId < 1)
             {
                 return new BadRequestObjectResult("Invalid parameters.");
             }
-
-            // Queries
-            var sqlStr =
-            "DELETE FROM AttendanceVerification " +
-            $"WHERE UserId = {userId} AND EventId = {eventId}";
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            int affectedRows;
+            try
             {
-                try
-                {
-                    int affectedRows = await cmd.ExecuteNonQueryAsync();
-
-                    if (affectedRows == 0)
-                    {
-                        DBConnect.Dispose(conn);
-                        return new BadRequestObjectResult($"Deleting verification failed: verification with UserId {userId} " +
-                            $"and EventId {eventId} does not exist!");
-                    }
-                    if (affectedRows > 1)
-                    {
-                        //multiple rows affected: something went wrong
-                        log.LogInformation($"Deleted multiple rewards when executing query to delete single verification: " +
-                            $"UserId = {userId}, EventId = {eventId}");
-                    }
-                }
-                catch (Exception e)
-                {
-                    return new BadRequestObjectResult($"SQL query failed: {e.Message}");
-                }
+                affectedRows = await AttendanceDAO.Instance.DeleteVerification(userId, eventId);
             }
-            DBConnect.Dispose(conn);
-
-            return new OkObjectResult("Successfully deleted the verification.");
+            catch
+            {
+                affectedRows = -1;
+            }
+            switch (affectedRows)
+            {
+                case 1:
+                    return new OkObjectResult($"Successfully deleted the verification for user#{userId} at event #{eventId}");
+                case 0:
+                    return new BadRequestObjectResult($"Deleting verification failed: verification with UserId {userId} " +
+                        $"and EventId {eventId} does not exist!");
+                case -1:
+                    return new BadRequestObjectResult($"SQL query failed: delete verification for user#{userId} at event#{eventId}");
+                    break;
+                default:
+                    return new OkObjectResult("Deleted the verification. Duplicate verification was found and also deleted.");
+            }
         }
     }
 }
