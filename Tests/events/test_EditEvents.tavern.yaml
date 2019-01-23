@@ -17,7 +17,7 @@ stages:
       data:
         title: Vrijgezelenfeest44
     response:
-      status_code: 404
+      status_code: 400
 
   - name: Invalid input
     request:

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using GildtAPI.DAO;
+﻿using GildtAPI.DAO;
 using GildtAPI.Model;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GildtAPI.Controllers
 {
@@ -26,7 +24,7 @@ namespace GildtAPI.Controllers
 
         public async Task<int> CreateEvent(Event evenT)
         {
-            return await EventDAO.Instance.AddEvent(evenT);
+            return await EventDAO.Instance.CreateEvent(evenT);
         }
 
         public async Task<int> EditEvent(Event evenT)
@@ -34,14 +32,15 @@ namespace GildtAPI.Controllers
             return await EventDAO.Instance.EditEvent(evenT);
         }
 
-        public async Task<int> CreateTag(string tag)
+        public async Task<int> AddTagToEvent(int eventId, int tagId)
         {
-            return await EventDAO.Instance.Createtag(tag);
+            return await EventDAO.Instance.AddTagToEvent(eventId, tagId);
         }
 
-        public async Task<int> AddTag(int eventId, int tagId)
+        public async Task<int> RemoveTagFromEvent(int eventId, int tagId)
         {
-            return await EventDAO.Instance.AddTag(eventId, tagId);
+            return await EventDAO.Instance.RemoveTagFromEvent(eventId, tagId);
         }
+
     }
 }

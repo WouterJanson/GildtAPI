@@ -13,7 +13,7 @@ stages:
       url: http://localhost:7071/api/Events/Tags/Delete/111
       method: DELETE
     response:
-      status_code: 404
+      status_code: 400
 
   - name: Invalid input
     request:

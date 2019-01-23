@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Net;
 using System.Threading.Tasks;
@@ -13,7 +14,6 @@ namespace GildtAPI.DAO
         private static List<UsersCoupon> couponsList = new List<UsersCoupon>();
 
         // Get all users 
-        // @TODO: I Think something is not right here...
         public async Task<List<User>> GetAll()
         {
             string sqlStrUsers = $"SELECT * FROM Users ";
@@ -49,12 +49,14 @@ namespace GildtAPI.DAO
         public async Task<int> Delete(int id)
         {
             int rowsAffected;
-            string sqlStr = $"DELETE FROM Users WHERE Users.Id = '{id}'";
+            string sqlStr = $"DELETE FROM Users WHERE Users.Id = @Id";
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@Id", id);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
 
             }
@@ -66,7 +68,7 @@ namespace GildtAPI.DAO
         public async Task<int> Create(User user)
         {
             string sqlStr =
-            $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', '{user.Username}', '{user.Email}', '{user.Password}')";
+            $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', @Username, @Email, @Password)";
             int rowsAffected;
 
             List<User> usersList = await GetAll();
@@ -83,6 +85,10 @@ namespace GildtAPI.DAO
 
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
+                cmd.Parameters.AddWithValue("@Username", user.Username);
+                cmd.Parameters.AddWithValue("@Email", user.Email);
+                cmd.Parameters.AddWithValue("@Password", user.Password);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 
@@ -94,17 +100,23 @@ namespace GildtAPI.DAO
         public async Task<int> Edit(User user)
         {
             string sqlStrUpdate = $"UPDATE Users SET " +
-            $"Username = COALESCE({(user.Username == null ? "NULL" : $"'{user.Username}'")}, Username), " +
-            $"Email = COALESCE({(user.Email == null ? "NULL" : $"'{user.Email}'")}, Email), " +
-            $"Password = COALESCE({(user.Password == null ? "NULL" : $"'{user.Password}'")}, Password), " +
-            $"IsAdmin = COALESCE({(user.IsAdmin.ToString() == null ? "NULL" : $"'{user.IsAdmin.ToString()}'")}, IsAdmin) " +
-            $"WHERE Id = {user.Id}";
+            $"Username = COALESCE({(user.Username == null ? "NULL" : "@Username")}, Username), " +
+            $"Email = COALESCE({(user.Email == null ? "NULL" : "@Email")}, Email), " +
+            $"Password = COALESCE({(user.Password == null ? "NULL" : "@Password")}, Password), " +
+            $"IsAdmin = COALESCE({(user.IsAdmin.ToString() == null ? "NULL" : "@IsAdmin")}, IsAdmin) " +
+            $"WHERE Id = @Id";
             int rowsAffected;
 
             SqlConnection conn = DBConnect.GetConnection();
 
             using(SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
             {
+                cmd.Parameters.AddWithValue("@Id", ((object)user.Id) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Username", ((object)user.Username) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Email", ((object)user.Email) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Password", ((object)user.Password) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@IsAdmin", ((object)user.IsAdmin) ?? DBNull.Value);
+
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
 
@@ -116,6 +128,7 @@ namespace GildtAPI.DAO
 
         private async Task addCouponsToList(string sqlStrCoupons, SqlConnection conn)
         {
+            couponsList.Clear();
             using (SqlCommand cmdCoupons = new SqlCommand(sqlStrCoupons, conn))
             {
                 SqlDataReader readerCoupons = await cmdCoupons.ExecuteReaderAsync();
@@ -142,6 +155,7 @@ namespace GildtAPI.DAO
 
         private async Task addUsersToList(string sqlStrUsers, SqlConnection conn)
         {
+            users.Clear();
             using(SqlCommand cmdUsers = new SqlCommand(sqlStrUsers, conn))
             {
                 SqlDataReader readerUsers = await cmdUsers.ExecuteReaderAsync();

@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
-using System.Linq;
 using GildtAPI.Model;
 using GildtAPI.Controllers;
 
@@ -49,7 +48,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("DeleteUser")]
         public static async Task<HttpResponseMessage> DeleteUser(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id?}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
             if (!GlobalFunctions.CheckValidId(id))

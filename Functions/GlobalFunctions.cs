@@ -7,6 +7,7 @@ namespace GildtAPI
         // Check if the Id of the object exists.
         public static bool CheckValidId(params string[] ids)
         {
+            bool valid = false;
             try
             {
                 foreach(string id in ids)
@@ -19,11 +20,11 @@ namespace GildtAPI
                         // Checks if the id is a positive number
                         if (Id >= 0)
                         {
-                            return true;
+                            valid = true;
                         }
                         else
                         {
-                            return false;
+                            valid = false;
                         }
                     }
                 }
@@ -34,7 +35,7 @@ namespace GildtAPI
                 return false;
             }
 
-            return true;
+            return valid;
         }
 
         //Check if all the inputs are filled in.
