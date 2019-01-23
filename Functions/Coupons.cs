@@ -26,7 +26,7 @@ namespace GildtAPI.Functions
 
             return coupons.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, coupons, "application/json")
-                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error returning the coupons", "application/json");
         }
 
         [FunctionName("GetSingleCoupon")]
@@ -42,7 +42,9 @@ namespace GildtAPI.Functions
 
             Coupon coupon = await CouponController.Instance.Get(Convert.ToInt32(id));
 
-            return req.CreateResponse(HttpStatusCode.OK, coupon, "application/json");
+            return coupon != null
+                ? req.CreateResponse(HttpStatusCode.OK, coupon, "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "The coupon does not exists", "application/json");
         }
 
         [FunctionName("AddCoupon")]

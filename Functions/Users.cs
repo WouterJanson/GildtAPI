@@ -26,7 +26,7 @@ namespace GildtAPI.Functions
 
             return users.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, users, "application/json")
-                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+                : req.CreateResponse(HttpStatusCode.BadRequest, "Error returning the users", "application/json");
         }
 
         [FunctionName("GetUser")]
@@ -42,7 +42,9 @@ namespace GildtAPI.Functions
 
             User user = await UserController.Instance.Get(Convert.ToInt32(id));
 
-            return req.CreateResponse(HttpStatusCode.OK, user, "application/json");
+            return user != null 
+                ? req.CreateResponse(HttpStatusCode.OK, user, "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "The user does not exists", "application/json");
         }
 
 
