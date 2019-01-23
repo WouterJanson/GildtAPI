@@ -7,11 +7,26 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
 using GildtAPI.Controllers;
+using System.Collections.Generic;
+using GildtAPI.Model;
 
 namespace GildtAPI.Functions
 {
     public static class Tags
     {
+        [FunctionName("GetAllTags")]
+        public static async Task<HttpResponseMessage> GetAllTags(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Tags")] HttpRequestMessage req,
+        ILogger log)
+        {
+            List<Tag> tags = await TagController.Instance.GetAllTags();
+
+            return tags.Count >= 1
+                ? req.CreateResponse(HttpStatusCode.OK, tags, "application/json")
+                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+
+        }
+
         [FunctionName("EditTags")]
         public static async Task<HttpResponseMessage> EditTags(
            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Tags/Edit/{id}")] HttpRequestMessage req,
@@ -62,7 +77,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created Tag.", "application/json");
             }
-            else // is dit niet overbodig zoek uit
+            else
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "creating Tag failed, tag might already exist", "application/json");
             }

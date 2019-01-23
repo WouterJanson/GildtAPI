@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using GildtAPI.Model;
 using System.Net.Http;
@@ -21,8 +20,6 @@ namespace GildtAPI.Functions
             ILogger log)
         {
             List<Event> events = await EventController.Instance.GetAll();
-
-            string j = JsonConvert.SerializeObject(events);
 
             return events.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, events, "application/json")

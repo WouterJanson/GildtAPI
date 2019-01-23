@@ -1,10 +1,37 @@
-﻿using System.Data.SqlClient;
+﻿using GildtAPI.Model;
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Threading.Tasks;
 
 namespace GildtAPI.DAO
 {
     class TagDAO : Singleton<TagDAO>
     {
+        
+        public async Task<List<Tag>> GetAllTags()
+        {
+            // get all events Query
+            string sqlStr = "SELECT * FROM Tags";
+
+            SqlConnection conn = DBConnect.GetConnection();
+
+            List<Tag> tags = new List<Tag>();
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
+                while (reader.Read())
+                {
+                    Tag t = new Tag(Convert.ToInt32(reader["Id"]), reader["Name"].ToString());
+                    tags.Add(t);
+                }
+            }
+
+            DBConnect.Dispose(conn);
+            return tags;
+        }
+
         public async Task<int> DeleteTag(int Id)
         {
             //queries
@@ -23,7 +50,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> Createtag(string tag)
+        public async Task<int> CreateTag(string tag)
         {
             int RowsAffected;
 
