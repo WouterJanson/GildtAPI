@@ -293,6 +293,15 @@ namespace GildtAPI.DAO
                         currentEvent = newEvent;
                     }
 
+
+                    //check if event has tag if not give a 0
+                    int tagId = 0;
+                    int.TryParse(reader["TagId"].ToString(), out tagId);
+                    string tagName = reader["Tag"].ToString();
+
+                    //Add tag to current event tags List
+                    currentEventTagsList.Add(new Tag(tagId, tagName));
+
                     // keep checking if a unique event has been read, if so save the gathered tags to the previous event and make a new list(tags) for the new event
                     if (currentEvent.Id != newEvent.Id)
                     {
@@ -303,15 +312,6 @@ namespace GildtAPI.DAO
 
                         currentEventTagsList = new List<Tag>(); // make a new empty list of "currentEventTags" when a new event has been read
                     }
-
-                    //check if event has tag if not give a 0
-                    int tagId = 0;
-                    int.TryParse(reader["TagId"].ToString(), out tagId);
-
-                    string tagName = reader["Tag"].ToString();
-
-                    //Add tag to current event tags List
-                    currentEventTagsList.Add(new Tag(tagId, tagName));
                 }
 
                 //add the last event from the reader 
