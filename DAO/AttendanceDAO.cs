@@ -32,6 +32,39 @@ namespace GildtAPI.DAO
             return false;
         }
 
+        public async Task<List<Attendance>> GetUserAttendanceList(int userId, int count)
+        {
+            var sqlAttendance =
+                $"SELECT TOP {count} " +
+                $"att.EventId AS EventId, " +
+                $"Users.Id as UserId, " +
+                $"Users.Username AS Username " +
+                $"FROM AttendanceVerification as att " +
+                $"INNER JOIN Users " +
+                $"ON att.UserId = Users.Id " +
+                $"WHERE att.UserId = {userId}";
+
+            List<Attendance> attendanceList = new List<Attendance>();
+
+            //Connects with the database
+            SqlConnection conn = DBConnect.GetConnection();
+
+            using (SqlCommand cmd = new SqlCommand(sqlAttendance, conn))
+            {
+                SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+
+                    attendanceList.Add(
+                        new Attendance(
+                            int.Parse(reader["UserId"].ToString()),
+                            int.Parse(reader["EventId"].ToString()),
+                            reader["Username"].ToString()));
+                }
+            }
+            return attendanceList;
+        }
+
         public async Task<List<Attendance>> GetAttendanceList(int? eventId, int count)
         {
             var sqlAttendance =
@@ -71,32 +104,43 @@ namespace GildtAPI.DAO
 
             return attendanceList;
         }
-        /*
-        private async Task addCouponsToList(string sqlStrCoupons, SqlConnection conn)
+
+        public async Task CreateVerification(int userId, int eventId)
         {
-            couponsList.Clear();
-            using (SqlCommand cmdCoupons = new SqlCommand(sqlStrCoupons, conn))
+            // Queries
+            //Query to insert new row into AttendanceVerification
+            var sqlStr =
+            "INSERT INTO AttendanceVerification " +
+                $"(UserId, EventId) " +
+            "VALUES " +
+                $"(@UserId, @EventId)";
+
+            SqlConnection conn = DBConnect.GetConnection();
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
-                SqlDataReader readerCoupons = await cmdCoupons.ExecuteReaderAsync();
-                while (readerCoupons.Read())
-                {
-                    couponsList.Add(
-                        new UsersCoupon()
-                        {
-                            CouponId = Convert.ToInt32(readerCoupons["CouponId"]),
-                            Name = readerCoupons["Name"].ToString(),
-                            Description = readerCoupons["Description"].ToString(),
-                            StartDate = DateTime.Parse(readerCoupons["StartDate"].ToString()),
-                            EndDate = DateTime.Parse(readerCoupons["EndDate"].ToString()),
-                            Type = Convert.ToInt32(readerCoupons["Type"].ToString()),
-                            TotalUsed = Convert.ToInt32(readerCoupons["TotalUsed"]),
-                            Image = readerCoupons["Image"].ToString(),
-                            UserId = Convert.ToInt32(readerCoupons["UserId"])
-                        }
-                    );
-                }
-                readerCoupons.Close();
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@EventId", eventId);
+                await cmd.ExecuteNonQueryAsync();
             }
-        }*/
+
+            // Close the database connection
+            DBConnect.Dispose(conn);
+        }
+
+        public async Task<int> DeleteVerification(int userId, int eventId)
+        {
+            // Queries
+            var sqlStr =
+            "DELETE FROM AttendanceVerification " +
+            $"WHERE UserId = {userId} AND EventId = {eventId}";
+            int affectedRows = -1;
+            SqlConnection conn = DBConnect.GetConnection();
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            {
+                affectedRows = await cmd.ExecuteNonQueryAsync();
+                DBConnect.Dispose(conn);
+                return affectedRows;
+            }
+        }
     }
 }
