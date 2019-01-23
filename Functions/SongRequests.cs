@@ -62,13 +62,9 @@ namespace GildtAPI.Functions
             HttpRequestMessage req,
             ILogger log, string id)
         {
-            try
+            if (!GlobalFunctions.CheckValidId(id))
             {
-                int convId = Convert.ToInt32(id);
-            }
-            catch
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
             int rowsAffected = await SongRequestController.Instance.DeleteSongrequest(Convert.ToInt32(id));
@@ -83,32 +79,36 @@ namespace GildtAPI.Functions
 
         [FunctionName("AddSongRequest")]
         public static async Task<HttpResponseMessage> AddSongRequest(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/Add")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/Add/{id}")]
             HttpRequestMessage req,
-            ILogger log)
-        {
-
-        
+            ILogger log, string id)
+        {        
             SongRequest song = new SongRequest();
 
-            List<string> missingFields = new List<string>();
-
-            
-
+            //body
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            if (!GlobalFunctions.CheckValidId(formData["UserId"]))
+
+            if (!GlobalFunctions.CheckValidId(id))
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
+
+           
             song.Title = formData["Title"];
             song.Artist = formData["Artist"];
             song.DateTime = Convert.ToDateTime(formData["DateTime"]);
-            song.UserId = Convert.ToInt32(formData["UserId"]);
+            song.UserId = Convert.ToInt32(id);
 
-            bool input = GlobalFunctions.CheckInputs(song.Title, song.Artist, song.DateTime.ToString(),song.UserId.ToString());
+            User verify = await UserController.Instance.Get(Convert.ToInt32(id));
+            if (verify == null)
+            {
+                return req.CreateResponse(HttpStatusCode.BadRequest, "User ID does not exist", "application/json");
+            }
+
+            bool input = GlobalFunctions.CheckInputs(song.Title, song.Artist, song.DateTime.ToString());
             if (!input)
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, $"Fields are not filled in.", "application/json");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Fields are not filled in.", "application/json");
             }
            
             int rowsAffected = await SongRequestController.Instance.AddSongRequest(song);
