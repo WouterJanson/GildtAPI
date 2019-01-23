@@ -11,9 +11,9 @@ using System.Data.SqlClient;
 using System.Net;
 using System.Linq;
 using GildtAPI.Model;
-using GildtAPI.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using GildtAPI.DAO;
 
 namespace GildtAPI.Functions
 {
@@ -25,7 +25,7 @@ namespace GildtAPI.Functions
             ILogger log)
         {
 
-            List<SongRequest> songRequests = await SongRequestController.Instance.GetAllSongrequests();
+            List<SongRequest> songRequests = await SongRequestDAO.Instance.GetAllSongrequests();
             
             if (songRequests.Count >= 0)
             {
@@ -48,7 +48,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            SongRequest songRequests = await SongRequestController.Instance.GetSongrequest(Convert.ToInt32(id));
+            SongRequest songRequests = await SongRequestDAO.Instance.GetSongrequest(Convert.ToInt32(id));
             if (songRequests == null)
             {
                 return req.CreateResponse(HttpStatusCode.NotFound, "Songrequest does not exist");
@@ -67,7 +67,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await SongRequestController.Instance.DeleteSongrequest(Convert.ToInt32(id));
+            int rowsAffected = await SongRequestDAO.Instance.DeleteSongrequest(Convert.ToInt32(id));
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Songrequest does not exist");
@@ -99,7 +99,7 @@ namespace GildtAPI.Functions
             song.DateTime = Convert.ToDateTime(formData["DateTime"]);
             song.UserId = Convert.ToInt32(id);
 
-            User verify = await UserController.Instance.Get(Convert.ToInt32(id));
+            User verify = await UserDAO.Instance.Get(Convert.ToInt32(id));
             if (verify == null)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "User ID does not exist", "application/json");
@@ -111,7 +111,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Fields are not filled in.", "application/json");
             }
            
-            int rowsAffected = await SongRequestController.Instance.AddSongRequest(song);
+            int rowsAffected = await SongRequestDAO.Instance.AddSongRequest(song);
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Error couldn't add, check input fields.", "application/json");
@@ -134,7 +134,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await SongRequestController.Instance.UpVote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
+            int rowsAffected = await SongRequestDAO.Instance.Upvote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
@@ -154,7 +154,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
-            int rowsAffected = await SongRequestController.Instance.Downvote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
+            int rowsAffected = await SongRequestDAO.Instance.Downvote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");

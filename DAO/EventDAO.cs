@@ -26,7 +26,7 @@ namespace GildtAPI.DAO
             return events;
         }
 
-        public async Task<Event> GetTheEvent(int id)
+        public async Task<Event> GetEvent(int id)
         {
             List<Event> eventslist = await GetAllEvents();
 
@@ -108,7 +108,7 @@ namespace GildtAPI.DAO
         {
             int RowsAffected;
 
-            Event DesiredEvent = await GetTheEvent(evenT.Id);
+            Event DesiredEvent = await GetEvent(evenT.Id);
 
             //check if event exist
             if (DesiredEvent == null)
@@ -159,7 +159,7 @@ namespace GildtAPI.DAO
             // querry to validate Tag (does it exist?)
             string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
 
-            Event DesiredEvent = await GetTheEvent(eventId);
+            Event DesiredEvent = await GetEvent(eventId);
 
             //check if event exist
             if (DesiredEvent == null)
@@ -219,7 +219,7 @@ namespace GildtAPI.DAO
             // querry to validate Tag (does it exist?)
             string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";           
 
-            Event DesiredEvent = await GetTheEvent(eventId);
+            Event DesiredEvent = await GetEvent(eventId);
 
             //check if event exist
             if (DesiredEvent == null)

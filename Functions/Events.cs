@@ -8,7 +8,7 @@ using GildtAPI.Model;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
-using GildtAPI.Controllers;
+using GildtAPI.DAO;
 
 namespace GildtAPI.Functions
 {
@@ -19,7 +19,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequestMessage req,
             ILogger log)
         {
-            List<Event> events = await EventController.Instance.GetAll();
+            List<Event> events = await EventDAO.Instance.GetAllEvents();
 
             return events.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, events, "application/json")
@@ -38,7 +38,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
             }
 
-            Event evenT = await EventController.Instance.GetEvent(Convert.ToInt32(id));
+            Event evenT = await EventDAO.Instance.GetEvent(Convert.ToInt32(id));
 
             // check if a event is found by given id, if not than give a 404 not found
             if (evenT == null)
@@ -61,7 +61,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.DeleteEvent(Convert.ToInt32(id));
+            int rowsAffected = await EventDAO.Instance.DeleteEvent(Convert.ToInt32(id));
 
             if (rowsAffected > 0)
             {
@@ -99,7 +99,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all required fields are filled in. Be sure that name, location and dates are filled in...", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.CreateEvent(evenT);
+            int rowsAffected = await EventDAO.Instance.CreateEvent(evenT);
 
             if (rowsAffected > 0)
             {
@@ -134,7 +134,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
             }
 
-            int RowsAffected = await EventController.Instance.EditEvent(evenT);
+            int RowsAffected = await EventDAO.Instance.EditEvent(evenT);
 
             if (RowsAffected > 0)
             {
@@ -162,7 +162,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.AddTagToEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+            int rowsAffected = await EventDAO.Instance.AddTagToEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
 
             if (rowsAffected > 0)
@@ -191,7 +191,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.RemoveTagFromEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+            int rowsAffected = await EventDAO.Instance.RemoveTagFromEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
             if (rowsAffected > 0)
             {

@@ -10,7 +10,6 @@ using Newtonsoft.Json;
 using GildtAPI.Model;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using GildtAPI.Controllers;
 using GildtAPI.DAO;
 
 namespace GildtAPI.Functions
