@@ -9,7 +9,7 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
 using GildtAPI.Model;
-using GildtAPI.DAO;
+using GildtAPI.Controllers;
 
 namespace GildtAPI.Functions
 {
@@ -20,7 +20,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Users")] HttpRequestMessage req,
             ILogger log)
         {
-            List<User> users = await UserDAO.Instance.GetAll();
+            List<User> users = await UserController.Instance.GetAll();
 
             string j = JsonConvert.SerializeObject(users);
 
@@ -40,7 +40,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            User user = await UserDAO.Instance.Get(Convert.ToInt32(id));
+            User user = await UserController.Instance.Get(Convert.ToInt32(id));
 
             return req.CreateResponse(HttpStatusCode.OK, user, "application/json");
         }
@@ -56,7 +56,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await UserDAO.Instance.Delete(Convert.ToInt32(id));
+            int rowsAffected = await UserController.Instance.Delete(Convert.ToInt32(id));
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the user.", "application/json")
@@ -85,7 +85,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
-            int rowsAffected = await UserDAO.Instance.Create(user);
+            int rowsAffected = await UserController.Instance.Create(user);
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the user.", "application/json")
@@ -105,7 +105,7 @@ namespace GildtAPI.Functions
             user.Password = formData["password"];
             user.IsAdmin = Convert.ToBoolean(formData["isadmin"]);
 
-            int rowsAffected = await UserDAO.Instance.Edit(user);
+            int rowsAffected = await UserController.Instance.Edit(user);
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the user.", "application/json")

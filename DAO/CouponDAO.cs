@@ -124,7 +124,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> SignUp(int userId, int couponId)
+        public async Task<int> Signup(int userId, int couponId)
         {
             var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES (@UserId, @CouponId)";
             var sqlGet =

@@ -6,9 +6,9 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
+using GildtAPI.Controllers;
 using System.Collections.Generic;
 using GildtAPI.Model;
-using GildtAPI.DAO;
 
 namespace GildtAPI.Functions
 {
@@ -19,7 +19,7 @@ namespace GildtAPI.Functions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Tags")] HttpRequestMessage req,
         ILogger log)
         {
-            List<Tag> tags = await TagDAO.Instance.GetAllTags();
+            List<Tag> tags = await TagController.Instance.GetAllTags();
 
             return tags.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, tags, "application/json")
@@ -41,7 +41,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
             }
 
-            int rowsAffected = await TagDAO.Instance.EditTag(tag, id);
+            int rowsAffected = await TagController.Instance.EditTag(tag, id);
 
             //controleren of er rows in de DB zijn aangepast return 400
             if (rowsAffected == 0)
@@ -71,7 +71,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Tag name is not filled in", "application/json");
             }
 
-            int rowsAffected = await TagDAO.Instance.CreateTag(tag);
+            int rowsAffected = await TagController.Instance.CreateTag(tag);
 
             if (rowsAffected > 0)
             {
@@ -94,7 +94,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
             }
 
-            int rowsAffected = await TagDAO.Instance.DeleteTag(Convert.ToInt32(id));
+            int rowsAffected = await TagController.Instance.DeleteTag(Convert.ToInt32(id));
 
             if (rowsAffected == 0)
             {

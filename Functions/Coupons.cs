@@ -9,7 +9,7 @@ using System.Net.Http;
 using System.Collections.Specialized;
 using System.Net;
 using GildtAPI.Model;
-using GildtAPI.DAO;
+using GildtAPI.Controllers;
 
 namespace GildtAPI.Functions
 {
@@ -20,7 +20,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons")] HttpRequestMessage req,
             ILogger log)
         {
-            List<Coupon> coupons = await CouponDAO.Instance.GetAll();
+            List<Coupon> coupons = await CouponController.Instance.GetAll();
 
             string j = JsonConvert.SerializeObject(coupons);
 
@@ -40,7 +40,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            Coupon coupon = await CouponDAO.Instance.Get(Convert.ToInt32(id));
+            Coupon coupon = await CouponController.Instance.Get(Convert.ToInt32(id));
 
             return req.CreateResponse(HttpStatusCode.OK, coupon, "application/json");
         }
@@ -70,7 +70,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
-            int rowsAffected = await CouponDAO.Instance.Create(coupon);
+            int rowsAffected = await CouponController.Instance.Create(coupon);
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the coupon.", "application/json")
@@ -87,7 +87,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await CouponDAO.Instance.Delete(Convert.ToInt32(id));
+            int rowsAffected = await CouponController.Instance.Delete(Convert.ToInt32(id));
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the coupon.", "application/json")
@@ -108,7 +108,7 @@ namespace GildtAPI.Functions
                 string type = formData["Type"];
                 string image = formData["Image"];
                 
-                int rowsAffected = await CouponDAO.Instance.Edit(coupon);
+                int rowsAffected = await CouponController.Instance.Edit(coupon);
 
                 return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon.", "application/json")
@@ -127,7 +127,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await CouponDAO.Instance.SignUp(Convert.ToInt32(couponId), Convert.ToInt32(userId));
+            int rowsAffected = await CouponController.Instance.SignUp(Convert.ToInt32(couponId), Convert.ToInt32(userId));
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully signed up.", "application/json")
