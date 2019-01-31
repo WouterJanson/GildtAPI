@@ -106,14 +106,18 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            Coupon coupon = new Coupon();
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            string name = formData["Name"];
-            string description = formData["Description"];
-            string startDate = formData["StartDate"];
-            string endDate = formData["EndDate"];
-            string type = formData["Type"];
-            string image = formData["Image"];
+
+            var coupon = new Coupon
+            {
+                Id = int.Parse(id),
+                Name = formData["Name"],
+                Description = formData["Description"],
+                StartDate = DateTime.Parse(formData["StartDate"]),
+                EndDate = DateTime.Parse(formData["EndDate"]),
+                Type = int.Parse(formData["Type"]),
+                Image = formData["Image"]
+            };
 
             int rowsAffected = await CouponController.Instance.EditAsync(coupon);
 
