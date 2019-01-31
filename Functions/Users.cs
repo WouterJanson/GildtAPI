@@ -42,7 +42,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            User user = await UserController.Instance.Get(Convert.ToInt32(id));
+            var user = await UserController.Instance.Get(Convert.ToInt32(id));
 
             return user != null 
                 ? req.CreateResponse(HttpStatusCode.OK, user, "application/json")
@@ -73,14 +73,17 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Users/Register")] HttpRequestMessage req,
             ILogger log)
         {
-            User user = new User();
             List<string> missingFields = new List<string>();
 
             // Read data from input
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            user.Username = formData["username"];
-            user.Email = formData["email"];
-            user.Password = PasswordHasher.HashPassword(formData["password"]);
+
+            var user = new User
+            {
+                Username = formData["username"],
+                Email = formData["email"],
+                Password = PasswordHasher.HashPassword(formData["password"])
+            };
 
             bool inputIsValid = GlobalFunctions.CheckInputs(user.Username, user.Email, user.Password);
 
@@ -101,13 +104,16 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route= "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            User user = new User();
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            user.Id = Convert.ToInt32(id);
-            user.Username = formData["username"];
-            user.Email = formData["email"];
-            user.Password = formData["password"];
-            user.IsAdmin = Convert.ToBoolean(formData["isadmin"]);
+
+            var user = new User
+            {
+                Id = Convert.ToInt32(id),
+                Username = formData["username"],
+                Email = formData["email"],
+                Password = formData["password"],
+                IsAdmin = Convert.ToBoolean(formData["isadmin"])
+            };
 
             int rowsAffected = await UserController.Instance.Edit(user);
 

@@ -82,17 +82,18 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Add")] HttpRequestMessage req,
             ILogger log)
         {
-            Event evenT = new Event();
-
             // Read data from input
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            evenT.Name = formData["title"];
-            evenT.Location = formData["location"];
-            evenT.StartDate = DateTime.Parse(formData["dateTimeStart"]);
-            evenT.EndDate = DateTime.Parse(formData["dateTimeEnd"]);
-            evenT.ShortDescription = formData["shortdescription"];
-            evenT.LongDescription = formData["longdescription"];
-            evenT.Image = formData["image"];
+            var evenT = new Event
+            {
+                Name = formData["title"],
+                Location = formData["location"],
+                StartDate = DateTime.Parse(formData["dateTimeStart"]),
+                EndDate = DateTime.Parse(formData["dateTimeEnd"]),
+                ShortDescription = formData["shortdescription"],
+                LongDescription = formData["longdescription"],
+                Image = formData["image"]
+            };
 
             bool inputIsValid = GlobalFunctions.CheckInputs(evenT.Name, evenT.Location, evenT.StartDate.ToString(), evenT.EndDate.ToString());
 
@@ -120,16 +121,19 @@ namespace GildtAPI.Functions
             ILogger log, string id)
         {
             // Read data from input
-            Event evenT = new Event();
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            evenT.Id = Convert.ToInt32(id);
-            evenT.Name = formData["title"];
-            evenT.Location = formData["location"];
-            evenT.StartDate = DateTime.Parse(formData["dateTimeStart"]);
-            evenT.EndDate = DateTime.Parse(formData["dateTimeEnd"]);
-            evenT.ShortDescription = formData["shortdescription"];
-            evenT.LongDescription = formData["longdescription"];
-            evenT.Image = formData["image"];
+
+            Event evenT = new Event
+            {
+                Id = Convert.ToInt32(id),
+                Name = formData["title"],
+                Location = formData["location"],
+                StartDate = DateTime.Parse(formData["dateTimeStart"]),
+                EndDate = DateTime.Parse(formData["dateTimeEnd"]),
+                ShortDescription = formData["shortdescription"],
+                LongDescription = formData["longdescription"],
+                Image = formData["image"]
+            };
 
             if (!GlobalFunctions.CheckValidId(id))
             {

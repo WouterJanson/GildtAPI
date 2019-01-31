@@ -79,9 +79,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/Add/{id}")]
             HttpRequestMessage req,
             ILogger log, string id)
-        {        
-            SongRequest song = new SongRequest();
-
+        {       
             //body
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
 
@@ -90,11 +88,13 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-           
-            song.Title = formData["Title"];
-            song.Artist = formData["Artist"];
-            song.DateTime = Convert.ToDateTime(formData["DateTime"]);
-            song.UserId = Convert.ToInt32(id);
+            var song = new SongRequest
+            {
+                Title = formData["Title"],
+                Artist = formData["Artist"],
+                DateTime = Convert.ToDateTime(formData["DateTime"]),
+                UserId = Convert.ToInt32(id)
+            };
 
             User verify = await UserController.Instance.Get(Convert.ToInt32(id));
             if (verify == null)
