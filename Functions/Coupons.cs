@@ -24,8 +24,6 @@ namespace GildtAPI.Functions
         {
             List<Coupon> coupons = await CouponController.Instance.GetAllAsync();
 
-            string j = JsonConvert.SerializeObject(coupons);
-
             return coupons.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, coupons, "application/json")
                 : req.CreateResponse(HttpStatusCode.BadRequest, "Error returning the coupons", "application/json");
