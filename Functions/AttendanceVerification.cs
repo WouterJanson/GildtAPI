@@ -132,7 +132,6 @@ namespace GildtAPI.Functions
                         $"and EventId {eventId} does not exist!");
                 case -1:
                     return new BadRequestObjectResult($"SQL query failed: delete verification for user#{userId} at event#{eventId}");
-                    break;
                 default:
                     return new OkObjectResult("Deleted the verification. Duplicate verification was found and also deleted.");
             }
