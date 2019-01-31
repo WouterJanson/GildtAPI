@@ -21,7 +21,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequestMessage req,
             ILogger log)
         {
-            List<Event> events = await EventController.Instance.GetAllAsync();
+            var events = await EventController.Instance.GetAllAsync();
 
             return events.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, events, "application/json")
@@ -35,16 +35,13 @@ namespace GildtAPI.Functions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events/{id}")] HttpRequestMessage req,
          ILogger log, string id)
         {
-            if (!GlobalFunctions.CheckValidId(id))
-            {
+            if (!GlobalFunctions.CheckValidId(id)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
             }
 
-            Event evenT = await EventController.Instance.GetEventAsync(Convert.ToInt32(id));
-
+            var evenT = await EventController.Instance.GetEventAsync(Convert.ToInt32(id));
             // check if a event is found by given id, if not than give a 404 not found
-            if (evenT == null)
-            {
+            if (evenT == null) {
                 return req.CreateResponse(HttpStatusCode.NotFound, "Event could not be found by the given ID", "application/json");
             }
 
@@ -58,21 +55,16 @@ namespace GildtAPI.Functions
            ILogger log, string id)
         {
 
-            if (!GlobalFunctions.CheckValidId(id))
-            {
+            if (!GlobalFunctions.CheckValidId(id)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
             int rowsAffected = await EventController.Instance.DeleteEventAsync(Convert.ToInt32(id));
-
-            if (rowsAffected > 0)
-            {
+            if (rowsAffected > 0)  {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the event.", "application/json");
             }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the event, check if the specified id is correct", "application/json");
-            }
+
+            return req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the event, check if the specified id is correct", "application/json");
 
         }
 
@@ -83,9 +75,9 @@ namespace GildtAPI.Functions
             ILogger log)
         {
             // Read data from input
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            var evenT = new Event
-            {
+            NameValueCollection formData = await req.Content.ReadAsFormDataAsync();
+
+            var evenT = new Event {
                 Name = formData["title"],
                 Location = formData["location"],
                 StartDate = DateTime.Parse(formData["dateTimeStart"]),
@@ -96,22 +88,16 @@ namespace GildtAPI.Functions
             };
 
             bool inputIsValid = GlobalFunctions.CheckInputs(evenT.Name, evenT.Location, evenT.StartDate.ToString(), evenT.EndDate.ToString());
-
-            if (!inputIsValid)
-            {
+            if (!inputIsValid) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all required fields are filled in. Be sure that name, location and dates are filled in...", "application/json");
             }
 
             int rowsAffected = await EventController.Instance.CreateEventAsync(evenT);
-
-            if (rowsAffected > 0)
-            {
+            if (rowsAffected > 0) {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created event.", "application/json");
             }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed, event might already exsist", "application/json");
-            }
+
+            return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed, event might already exsist", "application/json");
         }
 
 
@@ -121,10 +107,9 @@ namespace GildtAPI.Functions
             ILogger log, string id)
         {
             // Read data from input
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            var formData = await req.Content.ReadAsFormDataAsync();
 
-            Event evenT = new Event
-            {
+            Event evenT = new Event {
                 Id = Convert.ToInt32(id),
                 Name = formData["title"],
                 Location = formData["location"],
@@ -135,21 +120,16 @@ namespace GildtAPI.Functions
                 Image = formData["image"]
             };
 
-            if (!GlobalFunctions.CheckValidId(id))
-            {
+            if (!GlobalFunctions.CheckValidId(id)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
             }
 
             int RowsAffected = await EventController.Instance.EditEventAsync(evenT);
-
-            if (RowsAffected > 0)
-            {
+            if (RowsAffected > 0) {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully edited the event.", "application/json");
             }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed, check if the specified id is correct", "application/json");
-            }
+
+            return req.CreateResponse(HttpStatusCode.BadRequest, "editing event failed, check if the specified id is correct", "application/json");
         }
 
 
@@ -158,27 +138,20 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
-            if (!GlobalFunctions.CheckValidId(Eventid))
-            {
+            if (!GlobalFunctions.CheckValidId(Eventid)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId", "application/json");
             }
 
-            if (!GlobalFunctions.CheckValidId(TagId))
-            {
+            if (!GlobalFunctions.CheckValidId(TagId)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
             int rowsAffected = await EventController.Instance.AddTagToEventAsync(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
-
-
-            if (rowsAffected > 0)
-            {
+            if (rowsAffected > 0) {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully added Tag the the Event!", "application/json");
             }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed, check if the specified id's are correct", "application/json");
-            }
+
+            return req.CreateResponse(HttpStatusCode.BadRequest, "adding Tag failed, check if the specified id's are correct", "application/json");
         }
 
 
@@ -187,26 +160,20 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Remove/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
-            if (!GlobalFunctions.CheckValidId(Eventid))
-            {
+            if (!GlobalFunctions.CheckValidId(Eventid)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid EventId", "application/json");
             }
 
-            if (!GlobalFunctions.CheckValidId(TagId))
-            {
+            if (!GlobalFunctions.CheckValidId(TagId)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
             int rowsAffected = await EventController.Instance.RemoveTagFromEventAsync(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
-
-            if (rowsAffected > 0)
-            {
+            if (rowsAffected > 0) {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully removed the Tag from the Event!", "application/json");
             }
-            else
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "removing Tag failed, check if the specified id's are correct", "application/json");
-            }
+
+            return req.CreateResponse(HttpStatusCode.BadRequest, "removing Tag failed, check if the specified id's are correct", "application/json");
         }
 
     }

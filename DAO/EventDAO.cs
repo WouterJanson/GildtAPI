@@ -18,24 +18,20 @@ namespace GildtAPI.DAO
                 $"LEFT JOIN (SELECT EventsTags.EventsId, Tags.Name AS Tag, Tags.Id AS TagId FROM EventsTags " +
                 $"LEFT JOIN Tags ON EventsTags.TagsId = Tags.Id) as tags ON Events.Id = tags.EventsId ORDER BY Events.Id";
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            await AddEventsToListAsync(sqlStr, conn);
-
-            DBConnect.Dispose(conn);
+            using (var conn = DBConnect.GetConnection()) {
+                await AddEventsToListAsync(sqlStr, conn);
+            }
 
             return events;
         }
 
         public async Task<Event> GetTheEventAsync(int id)
         {
-            List<Event> eventslist = await GetAllEventsAsync();
+            var eventslist = await GetAllEventsAsync();
 
-            foreach (Event evenT in eventslist)
-            {
+            foreach (var evenT in eventslist) {
                 // start looking for the desired event by ID
-                if (evenT.Id == id)
-                {
+                if (evenT.Id == id) {
                     return evenT;
                 }
             }
@@ -50,16 +46,13 @@ namespace GildtAPI.DAO
             string sqlStr = $"DELETE Events WHERE Id = @id";
             int rowsAffected;
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", id);
-
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
             }
-
-            DBConnect.Dispose(conn);
 
             return rowsAffected;
         }
@@ -68,13 +61,11 @@ namespace GildtAPI.DAO
         {
             int RowsAffected;
 
-            List<Event> eventsList = await GetAllEventsAsync();
+            var eventsList = await GetAllEventsAsync();
 
             //check if event already exist
-            foreach (Event e in eventsList)
-            {
-                if (e.Name == evenT.Name && e.StartDate == evenT.StartDate)
-                {
+            foreach (var e in eventsList) {
+                if (e.Name == evenT.Name && e.StartDate == evenT.StartDate) {
                     return 0;
                 }
             }
@@ -84,23 +75,19 @@ namespace GildtAPI.DAO
             $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES (@Name, @Location, @StartDate, @EndDate, @ShortDescription, @LongDescription, @Image, 'false')";
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@Name", evenT.Name);
+                    cmd.Parameters.AddWithValue("@Location", evenT.Location);
+                    cmd.Parameters.AddWithValue("@StartDate", evenT.StartDate);
+                    cmd.Parameters.AddWithValue("@EndDate", evenT.EndDate);
+                    cmd.Parameters.AddWithValue("@ShortDescription", evenT.ShortDescription);
+                    cmd.Parameters.AddWithValue("@LongDescription", evenT.LongDescription);
+                    cmd.Parameters.AddWithValue("@Image", evenT.Image);
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Name", evenT.Name);
-                cmd.Parameters.AddWithValue("@Location", evenT.Location);
-                cmd.Parameters.AddWithValue("@StartDate", evenT.StartDate);
-                cmd.Parameters.AddWithValue("@EndDate", evenT.EndDate);
-                cmd.Parameters.AddWithValue("@ShortDescription", evenT.ShortDescription);
-                cmd.Parameters.AddWithValue("@LongDescription", evenT.LongDescription);
-                cmd.Parameters.AddWithValue("@Image", evenT.Image);
-
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
+                    RowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
 
             return RowsAffected;
         }
@@ -109,50 +96,46 @@ namespace GildtAPI.DAO
         {
             int RowsAffected;
 
-            Event DesiredEvent = await GetTheEventAsync(evenT.Id);
+            var DesiredEvent = await GetTheEventAsync(evenT.Id);
 
             //check if event exist
-            if (DesiredEvent == null)
-            {
+            if (DesiredEvent == null) {
                 return 0;
             }
 
             // Queries
             string sqlStr = $"UPDATE Events SET " +
-            $"Name = COALESCE({(evenT.Name == null ? "NULL" : "@Name")}, Name), " +
-            $"Location = COALESCE({(evenT.Location == null ? "NULL" : "@Location")}, Location), " +
-            $"StartDate = COALESCE({(evenT.StartDate == DateTime.MinValue ? "NULL" : "@StartDate")}, StartDate), " +
-            $"EndDate = COALESCE({(evenT.EndDate == DateTime.MinValue ? "NULL" : "@EndDate")}, EndDate), " +
-            $"ShortDescription = COALESCE({(evenT.ShortDescription == null ? "NULL" : "@ShortDescription")}, ShortDescription), " +
-            $"LongDescription = COALESCE({(evenT.LongDescription == null ? "NULL" : "@LongDescription")}, LongDescription), " +
-            $"Image = COALESCE({(evenT.Image == null ? "NULL" : "@Image")}, image), " +
-            $"IsActive = COALESCE({(evenT.IsActive == false ? "NULL" : "@IsActive")}, IsActive) " +
-            $" WHERE id = @Id";
+                $"Name = COALESCE({(evenT.Name == null ? "NULL" : "@Name")}, Name), " +
+                $"Location = COALESCE({(evenT.Location == null ? "NULL" : "@Location")}, Location), " +
+                $"StartDate = COALESCE({(evenT.StartDate == DateTime.MinValue ? "NULL" : "@StartDate")}, StartDate), " +
+                $"EndDate = COALESCE({(evenT.EndDate == DateTime.MinValue ? "NULL" : "@EndDate")}, EndDate), " +
+                $"ShortDescription = COALESCE({(evenT.ShortDescription == null ? "NULL" : "@ShortDescription")}, ShortDescription), " +
+                $"LongDescription = COALESCE({(evenT.LongDescription == null ? "NULL" : "@LongDescription")}, LongDescription), " +
+                $"Image = COALESCE({(evenT.Image == null ? "NULL" : "@Image")}, image), " +
+                $"IsActive = COALESCE({(evenT.IsActive == false ? "NULL" : "@IsActive")}, IsActive) " +
+                $" WHERE id = @Id";
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@Id", ((object)evenT.Id) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Name", ((object)evenT.Name) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Location", ((object)evenT.Location) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@StartDate", ((object)evenT.StartDate) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@EndDate", ((object)evenT.EndDate) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ShortDescription", ((object)evenT.ShortDescription) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@LongDescription", ((object)evenT.LongDescription) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Image", ((object)evenT.Image) ?? DBNull.Value);
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", ((object)evenT.Id) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Name", ((object)evenT.Name) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Location", ((object)evenT.Location) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@StartDate", ((object)evenT.StartDate) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@EndDate", ((object)evenT.EndDate) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@ShortDescription", ((object)evenT.ShortDescription) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@LongDescription", ((object)evenT.LongDescription) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Image", ((object)evenT.Image) ?? DBNull.Value);
-
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
+                    RowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
-            // Close the database connection
-            DBConnect.Dispose(conn);
 
             return RowsAffected;
         }
 
         public async Task<int> AddTagToEventAsync(int eventId, int tagId)
-        {
+       {
             int RowsAffected;
 
             // Queries
@@ -160,52 +143,43 @@ namespace GildtAPI.DAO
             // querry to validate Tag (does it exist?)
             string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
 
-            Event DesiredEvent = await GetTheEventAsync(eventId);
+            var DesiredEvent = await GetTheEventAsync(eventId);
 
             //check if event exist
-            if (DesiredEvent == null)
-            {
+            if (DesiredEvent == null) {
                 return 0;
             }
 
             // check if tag is already assigned to the event to avoid duplicate tags
-            for (int i = 0; i < DesiredEvent.Tags.Length; i++)
-            {
-                if (DesiredEvent.Tags[i].Id == tagId)
-                {
+            for (int i = 0; i < DesiredEvent.Tags.Length; i++) {
+                if (DesiredEvent.Tags[i].Id == tagId) {
                     return 0;
                 }
             }
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                //check if given tag exist
+                using (var cmd = new SqlCommand(sqlTagCheckStr, conn)) {
+                    cmd.Parameters.AddWithValue("@tagId", tagId);
 
-            //check if given tag exist
-            using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@tagId", tagId);
-
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    // check if the query has found a tag with the given TagId, IF SO also close dbconnection otherwise keep it open
-                    if (reader.HasRows == false)
-                    {
-                        DBConnect.Dispose(conn);
-                        return 0;
+                    using (SqlDataReader reader = cmd.ExecuteReader()) {
+                        // check if the query has found a tag with the given TagId, IF SO also close dbconnection otherwise keep it open
+                        if (reader.HasRows == false) {
+                            return 0;
+                        }
+                        reader.Close();
                     }
-                    reader.Close();
                 }
-            }
 
-            //execute operation if everything is OK
-            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
-            {
-                cmd2.Parameters.AddWithValue("@tagId", tagId);
-                cmd2.Parameters.AddWithValue("@eventId", eventId);
+                //execute operation if everything is OK
+                using (var cmd2 = new SqlCommand(sqlStr, conn)) {
+                    cmd2.Parameters.AddWithValue("@tagId", tagId);
+                    cmd2.Parameters.AddWithValue("@eventId", eventId);
 
-                // insert in to the table EventsTags
-                RowsAffected = await cmd2.ExecuteNonQueryAsync();
-                DBConnect.Dispose(conn);
+                    // insert in to the table EventsTags
+                    RowsAffected = await cmd2.ExecuteNonQueryAsync();
+                }
             }
 
             return RowsAffected;
@@ -220,43 +194,36 @@ namespace GildtAPI.DAO
             // querry to validate Tag (does it exist?)
             string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
 
-            Event DesiredEvent = await GetTheEventAsync(eventId);
+            var DesiredEvent = await GetTheEventAsync(eventId);
 
             //check if event exist
-            if (DesiredEvent == null)
-            {
+            if (DesiredEvent == null) {
                 return 0;
             }
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                //check if given tag exist
+                using (var cmd = new SqlCommand(sqlTagCheckStr, conn)) {
+                    cmd.Parameters.AddWithValue("@tagId", tagId);
 
-            //check if given tag exist
-            using (SqlCommand cmd = new SqlCommand(sqlTagCheckStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@tagId", tagId);
-
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    // check if the query has found a tag with the given TagId,IF SO also close dbconnection otherwise keep it open
-                    if (reader.HasRows == false)
-                    {
-                        DBConnect.Dispose(conn);
-                        return 0;
+                    using (var reader = cmd.ExecuteReader()) {
+                        // check if the query has found a tag with the given TagId,IF SO also close dbconnection otherwise keep it open
+                        if (reader.HasRows == false) {
+                            return 0;
+                        }
+                        reader.Close();
                     }
-                    reader.Close();
                 }
-            }
 
-            //Proceed to remove if everything is OK
-            using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
-            {
-                cmd2.Parameters.AddWithValue("@tagId", tagId);
-                cmd2.Parameters.AddWithValue("@eventId", eventId);
+                //Proceed to remove if everything is OK
+                using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn)) {
+                    cmd2.Parameters.AddWithValue("@tagId", tagId);
+                    cmd2.Parameters.AddWithValue("@eventId", eventId);
 
-                // insert in to the table EventsTags
-                RowsAffected = await cmd2.ExecuteNonQueryAsync();
-                DBConnect.Dispose(conn);
+                    // insert in to the table EventsTags
+                    RowsAffected = await cmd2.ExecuteNonQueryAsync();
+                }
             }
 
             return RowsAffected;
@@ -265,17 +232,14 @@ namespace GildtAPI.DAO
         public async Task AddEventsToListAsync(string sqlStr, SqlConnection conn)
         {
             events.Clear();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
+            using (var cmd = new SqlCommand(sqlStr, conn)) {
+                var reader = await cmd.ExecuteReaderAsync();
 
                 Event currentEvent = null;
-                List<Tag> currentEventTagsList = new List<Tag>();
+                var currentEventTagsList = new List<Tag>();
 
-                while (reader.Read())
-                {
-                    Event newEvent = new Event()
-                    {
+                while (reader.Read()) {
+                    var newEvent = new Event() {
                         //read event
                         Id = Convert.ToInt32(reader["EventId"]),
                         Name = reader["Name"].ToString(),
@@ -289,23 +253,20 @@ namespace GildtAPI.DAO
                     };
 
                     //check if it is the first event from the reader
-                    if (currentEvent == null)
-                    {
+                    if (currentEvent == null) {
                         currentEvent = newEvent;
                     }
 
 
                     //check if event has tag if not give a 0
-                    int tagId = 0;
-                    int.TryParse(reader["TagId"].ToString(), out tagId);
+                    int.TryParse(reader["TagId"].ToString(), out int tagId);
                     string tagName = reader["Tag"].ToString();
 
                     //Add tag to current event tags List
                     currentEventTagsList.Add(new Tag(tagId, tagName));
 
                     // keep checking if a unique event has been read, if so save the gathered tags to the previous event and make a new list(tags) for the new event
-                    if (currentEvent.Id != newEvent.Id)
-                    {
+                    if (currentEvent.Id != newEvent.Id) {
                         currentEvent.Tags = currentEventTagsList.ToArray(); //sla alle tags in de list van "currentEventTags" op in current event.tags zodra een nieuwe event binnenkomt.                       
 
                         events.Add(currentEvent); //add the event with its tags to the events list                       

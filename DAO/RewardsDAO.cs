@@ -15,27 +15,24 @@ namespace GildtAPI.DAO
                 "Id, Name, Description " +
                 "FROM Rewards " +
                $"WHERE Rewards.Id = {rewardId}";
+            List<Reward> rewardsList;
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            List<Reward> rewardsList = new List<Reward>();
-            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
-            {
-
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-                    return
-                        new Reward()
-                        {
-                            Id = int.Parse(reader["Id"].ToString()),
-                            Name = reader["Name"].ToString(),
-                            Description = reader["Description"].ToString()
-                        };
+            using (var conn = DBConnect.GetConnection()) {
+                rewardsList = new List<Reward>();
+                using (var cmd = new SqlCommand(sqlQuery, conn)) {
+                    var reader = await cmd.ExecuteReaderAsync();
+                    while (reader.Read()) {
+                        return
+                            new Reward() {
+                                Id = int.Parse(reader["Id"].ToString()),
+                                Name = reader["Name"].ToString(),
+                                Description = reader["Description"].ToString()
+                            };
+                    }
                 }
             }
-            if (rewardsList.Count == 0)
-            {
+
+            if (rewardsList.Count == 0) {
                 //no reward found
                 return null;
             }
@@ -53,25 +50,22 @@ namespace GildtAPI.DAO
                 //order by descending id to get newest entry
                 "ORDER BY Rewards.Id DESC";
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                var rewardsList = new List<Reward>();
 
-            List<Reward> rewardsList = new List<Reward>();
-            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
-            {
-
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    return
-                        new Reward()
-                        {
-                            Id = int.Parse(reader["Id"].ToString()),
-                            Name = reader["Name"].ToString(),
-                            Description = reader["Description"].ToString()
-                        };
+                using (var cmd = new SqlCommand(sqlQuery, conn)) {
+                    var reader = await cmd.ExecuteReaderAsync();
+                    while (reader.Read()) {
+                        return
+                            new Reward() {
+                                Id = int.Parse(reader["Id"].ToString()),
+                                Name = reader["Name"].ToString(),
+                                Description = reader["Description"].ToString()
+                            };
+                    }
                 }
             }
+
             return null;
         }
 
@@ -81,27 +75,25 @@ namespace GildtAPI.DAO
             string sqlQuery =
                 $"SELECT TOP {1000} Rewards.Id, Rewards.Name, Rewards.Description " +
                 "FROM Rewards";
+            List<Reward> rewardsList;
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                rewardsList = new List<Reward>();
 
-            List<Reward> rewardsList = new List<Reward>();
-            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
-            {
-
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    rewardsList.Add(
-                        new Reward()
-                        {
-                            Id = int.Parse(reader["Id"].ToString()),
-                            Name = reader["Name"].ToString(),
-                            Description = reader["Description"].ToString()
-                        }
-                    );
+                using (var cmd = new SqlCommand(sqlQuery, conn)) {
+                    var reader = await cmd.ExecuteReaderAsync();
+                    while (reader.Read()) {
+                        rewardsList.Add(
+                            new Reward() {
+                                Id = int.Parse(reader["Id"].ToString()),
+                                Name = reader["Name"].ToString(),
+                                Description = reader["Description"].ToString()
+                            }
+                        );
+                    }
                 }
             }
+
             return rewardsList.ToArray();
         }
 
@@ -113,27 +105,26 @@ namespace GildtAPI.DAO
                 $"ON UsersRewards.RewardId = Rewards.Id " +
                 $"INNER JOIN Users ON UserId = Users.Id " +
                 $"WHERE Users.Id = {userId}";
+            List<Reward> rewardsList;
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                rewardsList = new List<Reward>();
 
-            List<Reward> rewardsList = new List<Reward>();
-            using (SqlCommand cmd = new SqlCommand(sqlQuery, conn))
-            {
+                using (var cmd = new SqlCommand(sqlQuery, conn)) {
 
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    rewardsList.Add(
-                        new Reward()
-                        {
-                            Id = int.Parse(reader["Id"].ToString()),
-                            Name = reader["Name"].ToString(),
-                            Description = reader["Description"].ToString()
-                        }
-                    );
+                    var reader = await cmd.ExecuteReaderAsync();
+                    while (reader.Read()) {
+                        rewardsList.Add(
+                            new Reward() {
+                                Id = int.Parse(reader["Id"].ToString()),
+                                Name = reader["Name"].ToString(),
+                                Description = reader["Description"].ToString()
+                            }
+                        );
+                    }
                 }
             }
+
             return rewardsList.ToArray();
         }
 
@@ -152,29 +143,23 @@ namespace GildtAPI.DAO
             $"WHERE (Name = '{name}')";
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection())
+            {
+                //Checks if reward with name already exists
+                var checkRewards = new SqlCommand(sqlGet, conn);
+                checkRewards.Parameters.AddWithValue("Name", name);
 
-            //Checks if reward with name already exists
-            SqlCommand checkRewards = new SqlCommand(sqlGet, conn);
-            checkRewards.Parameters.AddWithValue("Name", name);
-            int existingRewards = (int)await checkRewards.ExecuteScalarAsync();
-            if (existingRewards > 0)
-            {
-                // Close the database connection
-                DBConnect.Dispose(conn);
-                return false;
-            }
-            else
-            {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                {
-                    await cmd.ExecuteNonQueryAsync();
+                int existingRewards = (int)await checkRewards.ExecuteScalarAsync();
+                if (existingRewards > 0) {
+                    return false;
                 }
 
-                // Close the database connection
-                DBConnect.Dispose(conn);
-                return true;
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    await cmd.ExecuteNonQueryAsync();
+                }
             }
+
+            return true;
         }
 
         public async Task<int> EditRewardAsync(int rewardId, string name, string description)
@@ -186,13 +171,13 @@ namespace GildtAPI.DAO
                         $"COALESCE({(description == null ? "NULL" : $"@description")}, Rewards.Description) " +
                         $"WHERE Rewards.Id = {rewardId}";
 
-            SqlConnection conn = DBConnect.GetConnection();
-            using (SqlCommand cmd = new SqlCommand(query, conn))
-            {
-                cmd.Parameters.AddWithValue("@name", name);
-                cmd.Parameters.AddWithValue("@description", description);
-                int affectedRows = await cmd.ExecuteNonQueryAsync();
-                return affectedRows;
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(query, conn)) {
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Parameters.AddWithValue("@description", description);
+                    int affectedRows = await cmd.ExecuteNonQueryAsync();
+                    return affectedRows;
+                }
             }
         }
 

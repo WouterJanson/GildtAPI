@@ -22,9 +22,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Users")] HttpRequestMessage req,
             ILogger log)
         {
-            List<User> users = await UserController.Instance.GetAllAsync();
-
-            string j = JsonConvert.SerializeObject(users);
+            var users = await UserController.Instance.GetAllAsync();
 
             return users.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, users, "application/json")
@@ -37,13 +35,11 @@ namespace GildtAPI.Functions
             ILogger log, string id)
         {
             // Check if id is valid
-            if (!GlobalFunctions.CheckValidId(id))
-            {
+            if (!GlobalFunctions.CheckValidId(id)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
             var user = await UserController.Instance.GetAsync(Convert.ToInt32(id));
-
             return user != null
                 ? req.CreateResponse(HttpStatusCode.OK, user, "application/json")
                 : req.CreateResponse(HttpStatusCode.BadRequest, "The user does not exists", "application/json");
@@ -55,13 +51,11 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            if (!GlobalFunctions.CheckValidId(id))
-            {
+            if (!GlobalFunctions.CheckValidId(id)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
             int rowsAffected = await UserController.Instance.DeleteAsync(Convert.ToInt32(id));
-
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the user.", "application/json")
                 : req.CreateResponse(HttpStatusCode.BadRequest, "Error deleting the user.", "application/json");
@@ -73,13 +67,12 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Users/Register")] HttpRequestMessage req,
             ILogger log)
         {
-            List<string> missingFields = new List<string>();
+            var missingFields = new List<string>();
 
             // Read data from input
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            var formData = await req.Content.ReadAsFormDataAsync();
 
-            var user = new User
-            {
+            var user = new User {
                 Username = formData["username"],
                 Email = formData["email"],
                 Password = PasswordHasher.HashPassword(formData["password"])
@@ -87,13 +80,11 @@ namespace GildtAPI.Functions
 
             bool inputIsValid = GlobalFunctions.CheckInputs(user.Username, user.Email, user.Password);
 
-            if (!inputIsValid)
-            {
+            if (!inputIsValid) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
             int rowsAffected = await UserController.Instance.CreateAsync(user);
-
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the user.", "application/json")
                 : req.CreateResponse(HttpStatusCode.BadRequest, "Error creating the user.", "application/json");
@@ -104,10 +95,9 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            var formData = await req.Content.ReadAsFormDataAsync();
 
-            var user = new User
-            {
+            var user = new User {
                 Id = Convert.ToInt32(id),
                 Username = formData["username"],
                 Email = formData["email"],
@@ -116,7 +106,6 @@ namespace GildtAPI.Functions
             };
 
             int rowsAffected = await UserController.Instance.EditAsync(user);
-
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the user.", "application/json")
                 : req.CreateResponse(HttpStatusCode.BadRequest, "Error editing the user.", "application/json");

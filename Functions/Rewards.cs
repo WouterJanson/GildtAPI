@@ -27,39 +27,33 @@ namespace GildtAPI.Functions
             string rewardsJson;
 
             bool validId = int.TryParse(qRewardId, out int rewardId);
-            bool validName = !String.IsNullOrWhiteSpace(qRewardName);
+            bool validName = !string.IsNullOrWhiteSpace(qRewardName);
 
-            if (!validId && !validName)
-            {
+            if (!validId && !validName) {
                 //no name or ID: return all rewards
                 int count = Constants.DEFAULTCOUNT;
-                if (qCount != null)
-                {
-                    Int32.TryParse(qCount, out count);
-                    if (count < 1)
-                    {
+                if (qCount != null) {
+                    int.TryParse(qCount, out count);
+                    if (count < 1) {
                         return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
                     }
                 }
-                Reward[] rewards = await RewardsDAO.Instance.GetAllRewardsAsync();
+
+                var rewards = await RewardsDAO.Instance.GetAllRewardsAsync();
                 rewardsJson = JsonConvert.SerializeObject(rewards);
                 return new OkObjectResult(rewardsJson);
             }
-            else if (!validId && validName)
-            {
+
+            if (!validId && validName) {
                 //No rewardId entered: get reward by name
                 var reward = await RewardsDAO.Instance.GetRewardByNameAsync(qRewardName);
-                if (reward == null)
-                {
+                if (reward == null) {
                     return new NotFoundObjectResult("No rewards with this name.");
                 }
                 rewardsJson = JsonConvert.SerializeObject(reward);
-            }
-            else
-            {
-                Reward reward = await RewardsDAO.Instance.GetRewardByIdAsync(rewardId);
-                if (reward == null)
-                {
+            } else {
+                var reward = await RewardsDAO.Instance.GetRewardByIdAsync(rewardId);
+                if (reward == null) {
                     return new NotFoundObjectResult("Reward not found.");
                 }
                 rewardsJson = JsonConvert.SerializeObject(reward);
@@ -77,25 +71,22 @@ namespace GildtAPI.Functions
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUserAsync));
             string qCount = req.Query["count"];
             int count = Constants.DEFAULTCOUNT;
-            if (qCount != null)
-            {
-                if (!Int32.TryParse(qCount, out count) || count < 1)
-                {
-                    return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
-                }
+
+            if (qCount != null && (!int.TryParse(qCount, out count) || count < 1)) {
+                return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
             }
-            if (!int.TryParse(userId, out int id))
-            {
+
+            if (!int.TryParse(userId, out int id)) {
                 return new BadRequestObjectResult("Invalid input");
             }
-            Reward[] userRewards = await RewardsDAO.Instance.GetUserRewardsAsync(count, id);
 
-            if (userRewards.Length == 0)
-            {
-                return (ActionResult)new OkObjectResult("No rewards for this user.");
+            var userRewards = await RewardsDAO.Instance.GetUserRewardsAsync(count, id);
+
+            if (userRewards.Length == 0) {
+                return new OkObjectResult("No rewards for this user.");
             }
-            string rewardsJson = JsonConvert.SerializeObject(userRewards);
-            return (ActionResult)new OkObjectResult(rewardsJson);
+
+            return new OkObjectResult(JsonConvert.SerializeObject(userRewards));
         }
 
 
@@ -109,12 +100,10 @@ namespace GildtAPI.Functions
             string name = req.Query["name"];
             string description = req.Query["description"];
 
-
             // Returns bad request if one of the input fields are not filled in
-            bool nameMissing = String.IsNullOrEmpty(name);
-            bool descMissing = String.IsNullOrEmpty(description);
-            if (nameMissing || descMissing)
-            {
+            bool nameMissing = string.IsNullOrEmpty(name);
+            bool descMissing = string.IsNullOrEmpty(description);
+            if (nameMissing || descMissing) {
                 string missingFieldsSummary = "Missing fields: " +
                     (nameMissing
                     ? (descMissing
@@ -123,12 +112,13 @@ namespace GildtAPI.Functions
                     : "description");
                 return new BadRequestObjectResult(missingFieldsSummary);
             }
+
             bool success = await RewardsDAO.Instance.CreateRewardAsync(name, description);
-            if (success)
-            {
+            if (success) {
                 return new OkObjectResult($"Reward \"{name}\" created!");
             }
-            else return new BadRequestObjectResult($"Reward \"{name}\" already exists!");
+
+            return new BadRequestObjectResult($"Reward \"{name}\" already exists!");
         }
 
         [FunctionName(nameof(Rewards) + "-" + nameof(EditRewardAsync))]
@@ -139,26 +129,22 @@ namespace GildtAPI.Functions
             string name = req.Query["name"];
             string description = req.Query["description"];
 
-            if (String.IsNullOrWhiteSpace(name) && description == null)
-            {
+            if (string.IsNullOrWhiteSpace(name) && description == null) {
                 return new BadRequestObjectResult("No name or description entered.");
             }
-            if (rewardId < 1)
-            {
+
+            if (rewardId < 1) {
                 return new BadRequestObjectResult("Invalid id.");
             }
 
             int rowsaffected;
-            try
-            {
+            try {
                 rowsaffected = await RewardsDAO.Instance.EditRewardAsync(rewardId, name, description);
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 return new BadRequestObjectResult($"Editing reward failed: {e.Message}");
             }
-            switch (rowsaffected)
-            {
+
+            switch (rowsaffected) {
                 case 0:
                     return new BadRequestObjectResult($"No reward with id {rewardId} exists!");
                 case 1:
@@ -176,8 +162,7 @@ namespace GildtAPI.Functions
         {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteRewardAsync)}");
 
-            if (rewardId < 1)
-            {
+            if (rewardId < 1) {
                 return new BadRequestObjectResult("Invalid rewardId parameter.");
             }
 
@@ -185,31 +170,26 @@ namespace GildtAPI.Functions
             var sqlStr =
             "DELETE FROM Rewards " +
             $"WHERE Id = {rewardId}";
-            //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                try
-                {
-                    int affectedRows = await cmd.ExecuteNonQueryAsync();
 
-                    if (affectedRows == 0)
-                    {
-                        DBConnect.Dispose(conn);
-                        return new BadRequestObjectResult($"Deleting reward failed: reward with id {rewardId} does not exist!");
+            //Connects with the database
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    try {
+                        int affectedRows = await cmd.ExecuteNonQueryAsync();
+
+                        if (affectedRows == 0) {
+                            return new BadRequestObjectResult($"Deleting reward failed: reward with id {rewardId} does not exist!");
+                        }
+
+                        if (affectedRows > 1) {
+                            //multiple rows affected: something went wrong
+                            log.LogInformation($"Deleted multiple rewards when executing query to delete single reward: RewardId = {rewardId}");
+                        }
+                    } catch (Exception e) {
+                        return new BadRequestObjectResult($"SQL query failed: {e.Message}");
                     }
-                    if (affectedRows > 1)
-                    {
-                        //multiple rows affected: something went wrong
-                        log.LogInformation($"Deleted multiple rewards when executing query to delete single reward: RewardId = {rewardId}");
-                    }
-                }
-                catch (Exception e)
-                {
-                    return new BadRequestObjectResult($"SQL query failed: {e.Message}");
                 }
             }
-            DBConnect.Dispose(conn);
 
             return new OkObjectResult("Successfully deleted the reward.");
         }

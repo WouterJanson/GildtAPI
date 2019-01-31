@@ -22,7 +22,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons")] HttpRequestMessage req,
             ILogger log)
         {
-            List<Coupon> coupons = await CouponController.Instance.GetAllAsync();
+            var coupons = await CouponController.Instance.GetAllAsync();
 
             return coupons.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, coupons, "application/json")
@@ -35,12 +35,11 @@ namespace GildtAPI.Functions
             ILogger log, string id)
         {
             // Check if id is valid
-            if (!GlobalFunctions.CheckValidId(id))
-            {
+            if (!GlobalFunctions.CheckValidId(id)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            Coupon coupon = await CouponController.Instance.GetAsync(Convert.ToInt32(id));
+            var coupon = await CouponController.Instance.GetAsync(Convert.ToInt32(id));
 
             return coupon != null
                 ? req.CreateResponse(HttpStatusCode.OK, coupon, "application/json")
@@ -52,13 +51,12 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons")] HttpRequestMessage req,
             ILogger log)
         {
-            List<string> missingFields = new List<string>();
+            var missingFields = new List<string>();
 
             // Read data from input
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            var formData = await req.Content.ReadAsFormDataAsync();
 
-            var coupon = new Coupon
-            {
+            var coupon = new Coupon {
                 Name = formData["Name"],
                 Description = formData["Description"],
                 StartDate = Convert.ToDateTime(formData["StartDate"]),
@@ -70,8 +68,7 @@ namespace GildtAPI.Functions
 
             bool inputIsValid = GlobalFunctions.CheckInputs(coupon.Name, coupon.Description, coupon.StartDate.ToString(), coupon.EndDate.ToString(), coupon.Type.ToString(), coupon.Image);
 
-            if (!inputIsValid)
-            {
+            if (!inputIsValid) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
@@ -87,8 +84,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Coupons/{id?}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            if (!GlobalFunctions.CheckValidId(id))
-            {
+            if (!GlobalFunctions.CheckValidId(id)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
@@ -104,10 +100,9 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
-            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            var formData = await req.Content.ReadAsFormDataAsync();
 
-            var coupon = new Coupon
-            {
+            var coupon = new Coupon {
                 Id = int.Parse(id),
                 Name = formData["Name"],
                 Description = formData["Description"],
@@ -131,8 +126,7 @@ namespace GildtAPI.Functions
             ILogger log, string couponId, string userId)
         {
             // Check if id is valid
-            if (!GlobalFunctions.CheckValidId(userId) || !GlobalFunctions.CheckValidId(couponId))
-            {
+            if (!GlobalFunctions.CheckValidId(userId) || !GlobalFunctions.CheckValidId(couponId)) {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 

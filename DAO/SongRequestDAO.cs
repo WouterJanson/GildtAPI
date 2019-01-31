@@ -25,9 +25,10 @@ namespace GildtAPI.DAO
                 "SELECT u.RequestId AS RequestID, COUNT(UserId) AS Upvotes FROM SongRequestUserVotes AS u WHERE u.Vote > 0 GROUP BY " +
                 "u.RequestId, u.Vote ) as uv ON sr.Id = uv.RequestID ";
 
-            SqlConnection conn = DBConnect.GetConnection();
-            await AddSongRequestListAsync(sqlAllRequests, conn);
-            DBConnect.Dispose(conn);
+            using (var conn = DBConnect.GetConnection()) {
+                await AddSongRequestListAsync(sqlAllRequests, conn);
+            }
+
             return songRequests;
 
         }
@@ -35,12 +36,10 @@ namespace GildtAPI.DAO
         //single songrequest 
         public async Task<SongRequest> GetSongrequestAsync(int id)
         {
-            List<SongRequest> songRequestsList = await GetAllSongrequestsAsync();
+            var songRequestsList = await GetAllSongrequestsAsync();
 
-            foreach (SongRequest songrequests in songRequestsList)
-            {
-                if (songrequests.Id == id)
-                {
+            foreach (var songrequests in songRequestsList) {
+                if (songrequests.Id == id) {
                     return songrequests;
                 }
             }
@@ -52,12 +51,14 @@ namespace GildtAPI.DAO
         {
             int rowsAffected;
             string sqlStr = $"DELETE SongRequest WHERE Id = @id";
-            SqlConnection conn = DBConnect.GetConnection();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@id", id);
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@id", id);
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
+
             return rowsAffected;
         }
 
@@ -74,37 +75,29 @@ namespace GildtAPI.DAO
             string sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values (@RequestId, @UserId, @vote)";
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
 
+                // insert a usersvote to a song
+                using (var cmd = new SqlCommand(sqlUpdateVote, conn)) {
+                    cmd.Parameters.AddWithValue("@RequestId", RequestId);
+                    cmd.Parameters.AddWithValue("@UserId", UserId);
+                    cmd.Parameters.AddWithValue("@vote", vote);
 
-            // insert a usersvote to a song
-            using (SqlCommand cmd = new SqlCommand(sqlUpdateVote, conn))
-            {
-
-                cmd.Parameters.AddWithValue("@RequestId", RequestId);
-                cmd.Parameters.AddWithValue("@UserId", UserId);
-                cmd.Parameters.AddWithValue("@vote", vote);
-                try
-                {
-                    rowsAffected = await cmd.ExecuteNonQueryAsync();
-                    if (rowsAffected == 0)
-                    {
-
-                        using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
-                        {
-                            cmd2.Parameters.AddWithValue("@RequestId", RequestId);
-                            cmd2.Parameters.AddWithValue("@UserId", UserId);
-                            cmd2.Parameters.AddWithValue("@vote", vote);
-                            rowsAffected = await cmd2.ExecuteNonQueryAsync();
+                    try {
+                        rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        if (rowsAffected == 0) {
+                            using (var cmd2 = new SqlCommand(sqlStr, conn)) {
+                                cmd2.Parameters.AddWithValue("@RequestId", RequestId);
+                                cmd2.Parameters.AddWithValue("@UserId", UserId);
+                                cmd2.Parameters.AddWithValue("@vote", vote);
+                                rowsAffected = await cmd2.ExecuteNonQueryAsync();
+                            }
                         }
+                        return rowsAffected;
+                    } catch (Exception e) {
+                        Console.WriteLine(e.Message);
+                        return 0;
                     }
-                    DBConnect.Dispose(conn);
-                    return rowsAffected;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    return 0;
                 }
             }
         }
@@ -120,36 +113,28 @@ namespace GildtAPI.DAO
             //insert nieuwe rij
             string sqlStr = $"INSERT INTO SongRequestUserVotes (RequestId, UserId, Vote) Values (@RequestId, @UserId, @vote)";
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                // insert a usersvote to a song
+                using (var cmd = new SqlCommand(sqlUpdateVote, conn)) {
+                    cmd.Parameters.AddWithValue("@RequestId", RequestId);
+                    cmd.Parameters.AddWithValue("@UserId", UserId);
+                    cmd.Parameters.AddWithValue("@vote", vote);
 
-            // insert a usersvote to a song
-            using (SqlCommand cmd = new SqlCommand(sqlUpdateVote, conn))
-            {
-
-                cmd.Parameters.AddWithValue("@RequestId", RequestId);
-                cmd.Parameters.AddWithValue("@UserId", UserId);
-                cmd.Parameters.AddWithValue("@vote", vote);
-                try
-                {
-                    rowsAffected = await cmd.ExecuteNonQueryAsync();
-                    if (rowsAffected == 0)
-                    {
-
-                        using (SqlCommand cmd2 = new SqlCommand(sqlStr, conn))
-                        {
-                            cmd2.Parameters.AddWithValue("@RequestId", RequestId);
-                            cmd2.Parameters.AddWithValue("@UserId", UserId);
-                            cmd2.Parameters.AddWithValue("@vote", vote);
-                            rowsAffected = await cmd2.ExecuteNonQueryAsync();
+                    try {
+                        rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        if (rowsAffected == 0) {
+                            using (var cmd2 = new SqlCommand(sqlStr, conn)) {
+                                cmd2.Parameters.AddWithValue("@RequestId", RequestId);
+                                cmd2.Parameters.AddWithValue("@UserId", UserId);
+                                cmd2.Parameters.AddWithValue("@vote", vote);
+                                rowsAffected = await cmd2.ExecuteNonQueryAsync();
+                            }
                         }
+                        return rowsAffected;
+                    } catch (Exception e) {
+                        Console.WriteLine(e.Message);
+                        return 0;
                     }
-                    DBConnect.Dispose(conn);
-                    return rowsAffected;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    return 0;
                 }
             }
         }
@@ -162,20 +147,17 @@ namespace GildtAPI.DAO
                 $"INSERT INTO SongRequest (Title, Artist, DateTime, UserId) " +
                 $"VALUES (@Title, @Artist, @DateTime, @UserId)";
 
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@Title", song.Title);
+                    cmd.Parameters.AddWithValue("@Artist", song.Artist);
+                    cmd.Parameters.AddWithValue("@DateTime", song.DateTime);
+                    cmd.Parameters.AddWithValue("@UserId", song.UserId);
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Title", song.Title);
-                cmd.Parameters.AddWithValue("@Artist", song.Artist);
-                cmd.Parameters.AddWithValue("@DateTime", song.DateTime);
-                cmd.Parameters.AddWithValue("@UserId", song.UserId);
-
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
 
-            DBConnect.Dispose(conn);
             return rowsAffected;
         }
 
@@ -183,14 +165,12 @@ namespace GildtAPI.DAO
         private async Task AddSongRequestListAsync(string sqlAllRequests, SqlConnection conn)
         {
             songRequests.Clear();
-            using (SqlCommand cmd = new SqlCommand(sqlAllRequests, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
+
+            using (var cmd = new SqlCommand(sqlAllRequests, conn)) {
+                var reader = await cmd.ExecuteReaderAsync();
+                while (reader.Read()) {
                     songRequests.Add(
-                        new SongRequest()
-                        {
+                        new SongRequest() {
                             Id = Convert.ToInt32(reader["RequestId"]),
                             Title = reader["Title"].ToString(),
                             Artist = reader["Artist"].ToString(),

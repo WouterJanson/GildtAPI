@@ -15,19 +15,18 @@ namespace GildtAPI.DAO
             var sqlGet =
                 "SELECT COUNT(*) FROM AttendanceVerification " +
                 "WHERE (UserId = @UserId AND EventId = @EventId)";
-            var conn = DBConnect.GetConnection();
-            SqlCommand checkVer = new SqlCommand(sqlGet, conn);
-            checkVer.Parameters.AddWithValue("@UserId", userId);
-            checkVer.Parameters.AddWithValue("@EventId", eventId);
-            int existingVer = (int)await checkVer.ExecuteScalarAsync();
-            if (existingVer > 0)
-            {
-                // Close the database connection
-                DBConnect.Dispose(conn);
-                return true;
-            }
 
-            return false;
+            using (var conn = DBConnect.GetConnection()) {
+                var checkVer = new SqlCommand(sqlGet, conn);
+                checkVer.Parameters.AddWithValue("@UserId", userId);
+                checkVer.Parameters.AddWithValue("@EventId", eventId);
+
+                int existingVer = (int)await checkVer.ExecuteScalarAsync();
+                if (existingVer > 0) {
+                    return true;
+                }
+                return false;
+            }
         }
 
         public async Task<List<Attendance>> GetUserAttendanceListAsync(int userId, int count)
@@ -42,24 +41,23 @@ namespace GildtAPI.DAO
                 $"ON att.UserId = Users.Id " +
                 $"WHERE att.UserId = {userId}";
 
-            List<Attendance> attendanceList = new List<Attendance>();
+            var attendanceList = new List<Attendance>();
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlAttendance, conn)) {
+                    var reader = await cmd.ExecuteReaderAsync();
 
-            using (SqlCommand cmd = new SqlCommand(sqlAttendance, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    attendanceList.Add(
-                        new Attendance(
-                            int.Parse(reader["UserId"].ToString()),
-                            int.Parse(reader["EventId"].ToString()),
-                            reader["Username"].ToString()));
+                    while (reader.Read()) {
+                        attendanceList.Add(
+                            new Attendance(
+                                int.Parse(reader["UserId"].ToString()),
+                                int.Parse(reader["EventId"].ToString()),
+                                reader["Username"].ToString()));
+                    }
                 }
             }
+
             return attendanceList;
         }
 
@@ -73,30 +71,29 @@ namespace GildtAPI.DAO
                 $"FROM AttendanceVerification as att " +
                 $"INNER JOIN Users " +
                 $"ON att.UserId = Users.Id ";
+
             var sqlWhere = $"WHERE att.EventId = {eventId}";
+
             // Checks if an id parameter is filled in
-            if (eventId != null)
-            {
+            if (eventId != null) {
                 //Add WHERE if id parameter exists
                 sqlAttendance = sqlAttendance + sqlWhere;
             }
 
-            List<Attendance> attendanceList = new List<Attendance>();
+            var attendanceList = new List<Attendance>();
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlAttendance, conn)) {
 
-            using (SqlCommand cmd = new SqlCommand(sqlAttendance, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-
-                    attendanceList.Add(
-                        new Attendance(
-                            int.Parse(reader["UserId"].ToString()),
-                            int.Parse(reader["EventId"].ToString()),
-                            reader["Username"].ToString()));
+                    var reader = await cmd.ExecuteReaderAsync();
+                    while (reader.Read()) {
+                        attendanceList.Add(
+                            new Attendance(
+                                int.Parse(reader["UserId"].ToString()),
+                                int.Parse(reader["EventId"].ToString()),
+                                reader["Username"].ToString()));
+                    }
                 }
             }
 
@@ -113,16 +110,13 @@ namespace GildtAPI.DAO
             "VALUES " +
                 $"(@UserId, @EventId)";
 
-            SqlConnection conn = DBConnect.GetConnection();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@UserId", userId);
-                cmd.Parameters.AddWithValue("@EventId", eventId);
-                await cmd.ExecuteNonQueryAsync();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@EventId", eventId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
             }
-
-            // Close the database connection
-            DBConnect.Dispose(conn);
         }
 
         public async Task<int> DeleteVerificationAsync(int userId, int eventId)
@@ -131,13 +125,14 @@ namespace GildtAPI.DAO
             var sqlStr =
             "DELETE FROM AttendanceVerification " +
             $"WHERE UserId = {userId} AND EventId = {eventId}";
+
             int affectedRows = -1;
-            SqlConnection conn = DBConnect.GetConnection();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                affectedRows = await cmd.ExecuteNonQueryAsync();
-                DBConnect.Dispose(conn);
-                return affectedRows;
+
+            using (SqlConnection conn = DBConnect.GetConnection()) {
+                using (SqlCommand cmd = new SqlCommand(sqlStr, conn)) {
+                    affectedRows = await cmd.ExecuteNonQueryAsync();
+                    return affectedRows;
+                }
             }
         }
     }

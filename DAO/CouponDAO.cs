@@ -15,11 +15,9 @@ namespace GildtAPI.DAO
         {
             string sqlStr = $"SELECT * FROM Coupons";
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            await AddCouponsToListAsync(sqlStr, conn);
-
-            DBConnect.Dispose(conn);
+            using (SqlConnection conn = DBConnect.GetConnection()) {
+                await AddCouponsToListAsync(sqlStr, conn);
+            }
 
             return coupons;
         }
@@ -28,10 +26,8 @@ namespace GildtAPI.DAO
         {
             List<Coupon> couponsList = await GetAll();
 
-            foreach (Coupon coupon in couponsList)
-            {
-                if (coupon.Id == id)
-                {
+            foreach (var coupon in couponsList) {
+                if (coupon.Id == id) {
                     return coupon;
                 }
             }
@@ -47,31 +43,24 @@ namespace GildtAPI.DAO
 
             List<Coupon> couponsList = await GetAll();
 
-            foreach (Coupon c in couponsList)
-            {
-                if (c.Name == coupon.Name)
-                {
+            foreach (var c in couponsList) {
+                if (c.Name == coupon.Name) {
                     return 0;
                 }
             }
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@Name", coupon.Name);
+                    cmd.Parameters.AddWithValue("@Description", coupon.Description);
+                    cmd.Parameters.AddWithValue("@StartDate", coupon.StartDate);
+                    cmd.Parameters.AddWithValue("@EndDate", coupon.EndDate);
+                    cmd.Parameters.AddWithValue("@Type", coupon.Type);
+                    cmd.Parameters.AddWithValue("@Image", coupon.Image);
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Name", coupon.Name);
-                cmd.Parameters.AddWithValue("@Description", coupon.Description);
-                cmd.Parameters.AddWithValue("@StartDate", coupon.StartDate);
-                cmd.Parameters.AddWithValue("@EndDate", coupon.EndDate);
-                cmd.Parameters.AddWithValue("@Type", coupon.Type);
-                cmd.Parameters.AddWithValue("@Image", coupon.Image);
-
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    return await cmd.ExecuteNonQueryAsync();
+                }
             }
-
-            DBConnect.Dispose(conn);
-
-            return rowsAffected;
         }
 
         public async Task<int> DeleteAsync(int id)
@@ -79,16 +68,12 @@ namespace GildtAPI.DAO
             int rowsAffected;
             string sqlStr = $"DELETE Coupons WHERE Id = @Id";
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", id);
-
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
-
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
-            DBConnect.Dispose(conn);
 
             return rowsAffected;
         }
@@ -105,22 +90,20 @@ namespace GildtAPI.DAO
                     $"Image = COALESCE({(coupon.Image == null ? "NULL" : "@Image")}, Image) " +
                     $" WHERE Id = @Id";
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStrUpdate, conn)) {
 
-            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", ((object)coupon.Id) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Name", ((object)coupon.Name) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Description", ((object)coupon.Description) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@StartDate", ((object)coupon.StartDate) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@EndDate", ((object)coupon.EndDate) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Type", ((object)coupon.Type) ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Image", ((object)coupon.Image) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Id", ((object)coupon.Id) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Name", ((object)coupon.Name) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Description", ((object)coupon.Description) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@StartDate", ((object)coupon.StartDate) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@EndDate", ((object)coupon.EndDate) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Type", ((object)coupon.Type) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Image", ((object)coupon.Image) ?? DBNull.Value);
 
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
-
-            DBConnect.Dispose(conn);
 
             return rowsAffected;
         }
@@ -132,21 +115,19 @@ namespace GildtAPI.DAO
                 $"SELECT COUNT(*) FROM UsersCoupons WHERE CouponId = @CouponId AND UserId = @UserId";
             int rowsAffected;
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                int CouponExist;
+                using (var checkCoupon = new SqlCommand(sqlGet, conn)) {
+                    checkCoupon.Parameters.AddWithValue("@CouponId", couponId);
+                    checkCoupon.Parameters.AddWithValue("@UserId", userId);
+                    CouponExist = (int)checkCoupon.ExecuteScalar();
+                }
 
-            SqlCommand checkCoupon = new SqlCommand(sqlGet, conn);
-            checkCoupon.Parameters.AddWithValue("@CouponId", couponId);
-            checkCoupon.Parameters.AddWithValue("@UserId", userId);
-            int CouponExist = (int)checkCoupon.ExecuteScalar();
+                if (CouponExist > 0) {
+                    return 0;
+                }
 
-            if (CouponExist > 0)
-            {
-                return 0;
-            }
-            else
-            {
-                using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-                {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
                     cmd.Parameters.AddWithValue("@CouponId", couponId);
                     cmd.Parameters.AddWithValue("@UserId", userId);
 
@@ -154,23 +135,18 @@ namespace GildtAPI.DAO
                 }
             }
 
-            DBConnect.Dispose(conn);
-
             return rowsAffected;
         }
 
         public async Task AddCouponsToListAsync(string sqlStr, SqlConnection conn)
         {
             coupons.Clear();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
+            using (var cmd = new SqlCommand(sqlStr, conn)) {
                 SqlDataReader reader = await cmd.ExecuteReaderAsync();
 
-                while (reader.Read())
-                {
+                while (reader.Read()) {
                     coupons.Add(
-                        new Coupon()
-                        {
+                        new Coupon() {
                             Id = Convert.ToInt32(reader["Id"]),
                             Name = reader["Name"].ToString(),
                             Description = reader["Description"].ToString(),

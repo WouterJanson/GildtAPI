@@ -14,22 +14,20 @@ namespace GildtAPI.DAO
         {
             // get all events Query
             string sqlStr = "SELECT * FROM Tags";
+            List<Tag> tags;
 
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                tags = new List<Tag>();
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    var reader = await cmd.ExecuteReaderAsync();
 
-            List<Tag> tags = new List<Tag>();
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                SqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-                while (reader.Read())
-                {
-                    Tag t = new Tag(Convert.ToInt32(reader["Id"]), reader["Name"].ToString());
-                    tags.Add(t);
+                    while (reader.Read()) {
+                        var t = new Tag(Convert.ToInt32(reader["Id"]), reader["Name"].ToString());
+                        tags.Add(t);
+                    }
                 }
             }
 
-            DBConnect.Dispose(conn);
             return tags;
         }
 
@@ -39,15 +37,13 @@ namespace GildtAPI.DAO
             string sqlStr = $"DELETE Tags WHERE Id = @Id";
             int rowsAffected;
 
-            SqlConnection conn = DBConnect.GetConnection();
-
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", Id);
-                rowsAffected = await cmd.ExecuteNonQueryAsync();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@Id", Id);
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
 
-            DBConnect.Dispose(conn);
             return rowsAffected;
         }
 
@@ -60,32 +56,26 @@ namespace GildtAPI.DAO
             string sqlTagCheckStr = $"SELECT Name FROM Tags WHERE Name = @tag";
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                // check if tag already exist in the database to avoid dublicate entries
+                using (var cmd2 = new SqlCommand(sqlTagCheckStr, conn)) {
+                    cmd2.Parameters.AddWithValue("@tag", tag);
 
-            // check if tag already exist in the database to avoid dublicate entries
-            using (SqlCommand cmd2 = new SqlCommand(sqlTagCheckStr, conn))
-            {
-                cmd2.Parameters.AddWithValue("@tag", tag);
-
-                using (SqlDataReader reader = cmd2.ExecuteReader())
-                {
-                    if (reader.HasRows)
-                    {
-                        DBConnect.Dispose(conn);
-                        return 0;
+                    using (var reader = cmd2.ExecuteReader()) {
+                        if (reader.HasRows) {
+                            return 0;
+                        }
+                        reader.Close();
                     }
-                    reader.Close();
+                }
+
+                using (var cmd = new SqlCommand(sqlStr, conn)) {
+                    cmd.Parameters.AddWithValue("@tag", tag);
+
+                    RowsAffected = await cmd.ExecuteNonQueryAsync();
                 }
             }
 
-            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
-            {
-                cmd.Parameters.AddWithValue("@tag", tag);
-
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
-            }
-
-            DBConnect.Dispose(conn);
             return RowsAffected;
         }
 
@@ -99,18 +89,15 @@ namespace GildtAPI.DAO
                                   $"Where Id= @Id";
 
             //Connects with the database
-            SqlConnection conn = DBConnect.GetConnection();
+            using (var conn = DBConnect.GetConnection()) {
+                using (var cmd = new SqlCommand(sqlStrUpdate, conn)) {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    cmd.Parameters.AddWithValue("@Tag", tag);
 
-            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", id);
-                cmd.Parameters.AddWithValue("@Tag", tag);
-
-                RowsAffected = await cmd.ExecuteNonQueryAsync();
+                    RowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
             }
 
-            // Close the database connection
-            DBConnect.Dispose(conn);
             return RowsAffected;
         }
     }
