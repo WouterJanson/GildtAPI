@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -9,8 +8,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using GildtAPI.Model;
 using System.Collections.Generic;
-using System.Data.SqlClient;
-using GildtAPI.Controllers;
 using GildtAPI.DAO;
 
 namespace GildtAPI.Functions

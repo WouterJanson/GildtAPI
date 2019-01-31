@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace GildtAPI.Model
+﻿namespace GildtAPI.Model
 {
     class Attendance
     {
