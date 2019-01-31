@@ -47,9 +47,9 @@ namespace GildtAPI.DAO
 
             List<Coupon> couponsList = await GetAll();
 
-            foreach(Coupon c in couponsList)
+            foreach (Coupon c in couponsList)
             {
-                if(c.Name == coupon.Name)
+                if (c.Name == coupon.Name)
                 {
                     return 0;
                 }
@@ -57,7 +57,7 @@ namespace GildtAPI.DAO
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 cmd.Parameters.AddWithValue("@Name", coupon.Name);
                 cmd.Parameters.AddWithValue("@Description", coupon.Description);

@@ -218,7 +218,7 @@ namespace GildtAPI.DAO
             // Queries
             string sqlStr = $"DELETE EventsTags WHERE EventsId = @eventId AND TagsId = @tagId";
             // querry to validate Tag (does it exist?)
-            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";           
+            string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
 
             Event DesiredEvent = await GetTheEventAsync(eventId);
 

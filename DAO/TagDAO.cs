@@ -9,7 +9,7 @@ namespace GildtAPI.DAO
 {
     class TagDAO : Singleton<TagDAO>
     {
-        
+
         public async Task<List<Tag>> GetAllTagsAsync()
         {
             // get all events Query

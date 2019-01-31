@@ -51,8 +51,8 @@ namespace GildtAPI.Functions
         public static async Task<IActionResult> GetUserVerificationsAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get",
             Route = "User/{userId}/Attendance/")] HttpRequest req, ILogger log,
             int userId)
-        
-{
+
+        {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetUserVerificationsAsync));
 
             string qCount = req.Query["count"];

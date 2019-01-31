@@ -108,7 +108,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.OK, "Successfully created event.", "application/json");
             }
-            else 
+            else
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "creating event failed, event might already exsist", "application/json");
             }

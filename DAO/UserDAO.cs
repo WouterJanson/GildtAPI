@@ -33,9 +33,9 @@ namespace GildtAPI.DAO
         {
             List<User> usersList = await GetAllAsync();
 
-            foreach(User user in usersList)
+            foreach (User user in usersList)
             {
-                if(user.Id == id)
+                if (user.Id == id)
                 {
                     return user;
                 }
@@ -52,7 +52,7 @@ namespace GildtAPI.DAO
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            using(SqlCommand cmd = new SqlCommand(sqlStr, conn))
+            using (SqlCommand cmd = new SqlCommand(sqlStr, conn))
             {
                 cmd.Parameters.AddWithValue("@Id", id);
 
@@ -108,7 +108,7 @@ namespace GildtAPI.DAO
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            using(SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
+            using (SqlCommand cmd = new SqlCommand(sqlStrUpdate, conn))
             {
                 cmd.Parameters.AddWithValue("@Id", ((object)user.Id) ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@Username", ((object)user.Username) ?? DBNull.Value);
@@ -155,7 +155,7 @@ namespace GildtAPI.DAO
         private async Task AddUsersToListAsync(string sqlStrUsers, SqlConnection conn)
         {
             users.Clear();
-            using(SqlCommand cmdUsers = new SqlCommand(sqlStrUsers, conn))
+            using (SqlCommand cmdUsers = new SqlCommand(sqlStrUsers, conn))
             {
                 SqlDataReader readerUsers = await cmdUsers.ExecuteReaderAsync();
 

@@ -10,7 +10,7 @@ namespace GildtAPI
             bool valid = false;
             try
             {
-                foreach(string id in ids)
+                foreach (string id in ids)
                 {
                     // Checks if the id is not empty
                     if (id != null)
@@ -28,7 +28,7 @@ namespace GildtAPI
                         }
                     }
                 }
-                
+
             }
             catch
             {
@@ -43,7 +43,7 @@ namespace GildtAPI
         {
             foreach (string value in values)
             {
-                if(value == null)
+                if (value == null)
                 {
                     return false;
                 }

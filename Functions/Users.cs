@@ -44,7 +44,7 @@ namespace GildtAPI.Functions
 
             var user = await UserController.Instance.GetAsync(Convert.ToInt32(id));
 
-            return user != null 
+            return user != null
                 ? req.CreateResponse(HttpStatusCode.OK, user, "application/json")
                 : req.CreateResponse(HttpStatusCode.BadRequest, "The user does not exists", "application/json");
         }
@@ -87,7 +87,7 @@ namespace GildtAPI.Functions
 
             bool inputIsValid = GlobalFunctions.CheckInputs(user.Username, user.Email, user.Password);
 
-            if(!inputIsValid)
+            if (!inputIsValid)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
@@ -101,7 +101,7 @@ namespace GildtAPI.Functions
 
         [FunctionName("EditUser")]
         public static async Task<HttpResponseMessage> EditUserAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route= "Users/{id}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;

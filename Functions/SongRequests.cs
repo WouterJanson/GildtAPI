@@ -23,7 +23,7 @@ namespace GildtAPI.Functions
         {
 
             List<SongRequest> songRequests = await SongRequestController.Instance.GetAllSongrequestsAsync();
-            
+
             if (songRequests.Count >= 0)
             {
                 return req.CreateResponse(HttpStatusCode.OK, songRequests, "application/json");
@@ -32,7 +32,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
             }
-           
+
 
         }
         [FunctionName("SongRequest")]
@@ -79,7 +79,7 @@ namespace GildtAPI.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/Add/{id}")]
             HttpRequestMessage req,
             ILogger log, string id)
-        {       
+        {
             //body
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
 
@@ -107,7 +107,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Fields are not filled in.", "application/json");
             }
-           
+
             int rowsAffected = await SongRequestController.Instance.AddSongRequestAsync(song);
             if (rowsAffected == 0)
             {

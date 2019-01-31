@@ -17,7 +17,7 @@ namespace GildtAPI.Functions
     public static class Rewards
     {
         [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsAsync))]
-        public static async Task<IActionResult> GetRewardsAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
+        public static async Task<IActionResult> GetRewardsAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get",
             Route = nameof(Rewards))] HttpRequest req, ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsAsync));
@@ -70,8 +70,8 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUserAsync))]
-        public static async Task<IActionResult> GetRewardsForUserAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
-            Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log, 
+        public static async Task<IActionResult> GetRewardsForUserAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get",
+            Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log,
             string userId)
         {
             log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUserAsync));
@@ -84,7 +84,7 @@ namespace GildtAPI.Functions
                     return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
                 }
             }
-            if(!int.TryParse(userId, out int id))
+            if (!int.TryParse(userId, out int id))
             {
                 return new BadRequestObjectResult("Invalid input");
             }
@@ -100,8 +100,9 @@ namespace GildtAPI.Functions
 
 
         [FunctionName(nameof(Rewards) + "-" + nameof(CreateRewardAsync))]
-        public static async Task<IActionResult> CreateRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", 
-            Route = "Rewards/Create")] HttpRequest req, ILogger log){
+        public static async Task<IActionResult> CreateRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post",
+            Route = "Rewards/Create")] HttpRequest req, ILogger log)
+        {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateRewardAsync)}");
             // Read data from input
             //var data = req.Content.ReadAsStringAsync().Result;
@@ -131,8 +132,8 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName(nameof(Rewards) + "-" + nameof(EditRewardAsync))]
-        public static async Task<IActionResult> EditRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "put", 
-            Route = "Rewards/{rewardId}/Edit")] HttpRequest req, ILogger log, 
+        public static async Task<IActionResult> EditRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "put",
+            Route = "Rewards/{rewardId}/Edit")] HttpRequest req, ILogger log,
             int rewardId)
         {
             string name = req.Query["name"];
@@ -152,7 +153,7 @@ namespace GildtAPI.Functions
             {
                 rowsaffected = await RewardsDAO.Instance.EditRewardAsync(rewardId, name, description);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return new BadRequestObjectResult($"Editing reward failed: {e.Message}");
             }
@@ -168,13 +169,13 @@ namespace GildtAPI.Functions
 
         }
 
-        [FunctionName( nameof(Rewards) + "-" + nameof(DeleteRewardAsync))]
-        public static async Task<IActionResult> DeleteRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", 
+        [FunctionName(nameof(Rewards) + "-" + nameof(DeleteRewardAsync))]
+        public static async Task<IActionResult> DeleteRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete",
             Route = "Rewards/{rewardId}/Delete")] HttpRequest req, ILogger log,
             int rewardId)
         {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteRewardAsync)}");
-            
+
             if (rewardId < 1)
             {
                 return new BadRequestObjectResult("Invalid rewardId parameter.");
@@ -203,7 +204,7 @@ namespace GildtAPI.Functions
                         log.LogInformation($"Deleted multiple rewards when executing query to delete single reward: RewardId = {rewardId}");
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     return new BadRequestObjectResult($"SQL query failed: {e.Message}");
                 }

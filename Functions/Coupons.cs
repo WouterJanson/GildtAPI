@@ -72,7 +72,7 @@ namespace GildtAPI.Functions
 
             bool inputIsValid = GlobalFunctions.CheckInputs(coupon.Name, coupon.Description, coupon.StartDate.ToString(), coupon.EndDate.ToString(), coupon.Type.ToString(), coupon.Image);
 
-            if(!inputIsValid)
+            if (!inputIsValid)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
@@ -82,8 +82,8 @@ namespace GildtAPI.Functions
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the coupon.", "application/json")
                 : req.CreateResponse(HttpStatusCode.BadRequest, "Error creating the coupon.", "application/json");
-        } 
-       
+        }
+
         [FunctionName("DeleteCoupons")]
         public static async Task<HttpResponseMessage> DeleteCouponAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Coupons/{id?}")] HttpRequestMessage req,
@@ -105,21 +105,21 @@ namespace GildtAPI.Functions
         public static async Task<HttpResponseMessage> EditCouponAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
             ILogger log, string id)
-            {
-                Coupon coupon = new Coupon();
-                NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-                string name = formData["Name"];
-                string description = formData["Description"];
-                string startDate = formData["StartDate"];
-                string endDate = formData["EndDate"];
-                string type = formData["Type"];
-                string image = formData["Image"];
-                
-                int rowsAffected = await CouponController.Instance.EditAsync(coupon);
+        {
+            Coupon coupon = new Coupon();
+            NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
+            string name = formData["Name"];
+            string description = formData["Description"];
+            string startDate = formData["StartDate"];
+            string endDate = formData["EndDate"];
+            string type = formData["Type"];
+            string image = formData["Image"];
 
-                return rowsAffected > 0
-                ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon.", "application/json")
-                : req.CreateResponse(HttpStatusCode.BadRequest, "Error editing the coupon.", "application/json");
+            int rowsAffected = await CouponController.Instance.EditAsync(coupon);
+
+            return rowsAffected > 0
+            ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon.", "application/json")
+            : req.CreateResponse(HttpStatusCode.BadRequest, "Error editing the coupon.", "application/json");
 
         }
 
