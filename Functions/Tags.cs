@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using System.Net.Http;
-using System.Collections.Specialized;
-using System.Net;
+
 using GildtAPI.Controllers;
-using System.Collections.Generic;
 using GildtAPI.Model;
 
 namespace GildtAPI.Functions

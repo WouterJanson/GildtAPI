@@ -1,4 +1,5 @@
 ﻿using System;
+
 namespace GildtAPI.Model
 {
     public class Coupon {

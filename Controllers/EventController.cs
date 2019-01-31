@@ -1,7 +1,8 @@
-﻿using GildtAPI.DAO;
-using GildtAPI.Model;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+
+using GildtAPI.DAO;
+using GildtAPI.Model;
 
 namespace GildtAPI.Controllers
 {

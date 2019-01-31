@@ -1,8 +1,9 @@
-﻿using GildtAPI.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
+
+using GildtAPI.Model;
 
 namespace GildtAPI.DAO
 {
