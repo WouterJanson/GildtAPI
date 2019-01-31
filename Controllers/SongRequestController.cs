@@ -9,32 +9,32 @@ namespace GildtAPI.Controllers
     class SongRequestController : Singleton<SongRequestController>
     {
 
-        public async Task<List<SongRequest>> GetAllSongrequests()
+        public async Task<List<SongRequest>> GetAllSongrequestsAsync()
         {
-            return await SongRequestDAO.Instance.GetAllSongrequests();
+            return await SongRequestDAO.Instance.GetAllSongrequestsAsync();
         }
-        public async Task<SongRequest> GetSongrequest(int id)
+        public async Task<SongRequest> GetSongrequestAsync(int id)
         {
-            return await SongRequestDAO.Instance.GetSongrequest(id);
-        }
-
-        public async Task<int> DeleteSongrequest(int id)
-        {
-            return await SongRequestDAO.Instance.DeleteSongrequest(id);
+            return await SongRequestDAO.Instance.GetSongrequestAsync(id);
         }
 
-        public async Task<int> AddSongRequest(SongRequest song)
+        public async Task<int> DeleteSongrequestAsync(int id)
         {
-            return await SongRequestDAO.Instance.AddSongRequest(song);
+            return await SongRequestDAO.Instance.DeleteSongrequestAsync(id);
+        }
+
+        public async Task<int> AddSongRequestAsync(SongRequest song)
+        {
+            return await SongRequestDAO.Instance.AddSongRequestAsync(song);
 
         }
-        public async Task<int> UpVote(int RequestId, int UserId)
+        public async Task<int> UpVoteAsync(int RequestId, int UserId)
         {
-            return await SongRequestDAO.Instance.Upvote(RequestId, UserId);
+            return await SongRequestDAO.Instance.UpvoteAsync(RequestId, UserId);
         }
-        public async Task<int> Downvote(int RequestId, int UserId)
+        public async Task<int> DownvoteAsync(int RequestId, int UserId)
         {
-            return await SongRequestDAO.Instance.Downvote(RequestId, UserId);
+            return await SongRequestDAO.Instance.DownvoteAsync(RequestId, UserId);
         }
       
     }

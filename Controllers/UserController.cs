@@ -8,29 +8,29 @@ namespace GildtAPI.Controllers
 {
     class UserController : Singleton<UserController>
     {
-        public async Task<List<User>> GetAll()
+        public async Task<List<User>> GetAllAsync()
         {
-            return await UserDAO.Instance.GetAll();
+            return await UserDAO.Instance.GetAllAsync();
         }
 
-        public async Task<User> Get(int id)
+        public async Task<User> GetAsync(int id)
         {
-            return await UserDAO.Instance.Get(id);
+            return await UserDAO.Instance.GetAsync(id);
         }
 
-        public async Task<int> Delete(int id)
+        public async Task<int> DeleteAsync(int id)
         {
-            return await UserDAO.Instance.Delete(id);
+            return await UserDAO.Instance.DeleteAsync(id);
         }
 
-        public async Task<int> Create(User user)
+        public async Task<int> CreateAsync(User user)
         {
-            return await UserDAO.Instance.Create(user);
+            return await UserDAO.Instance.CreateAsync(user);
         }
 
-        public async Task<int> Edit(User user)
+        public async Task<int> EditAsync(User user)
         {
-            return await UserDAO.Instance.Edit(user);
+            return await UserDAO.Instance.EditAsync(user);
         }
     }
 }

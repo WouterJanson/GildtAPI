@@ -17,11 +17,11 @@ namespace GildtAPI.Functions
     public static class Tags
     {
         [FunctionName("GetAllTags")]
-        public static async Task<HttpResponseMessage> GetAllTags(
+        public static async Task<HttpResponseMessage> GetAllTagsAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Tags")] HttpRequestMessage req,
         ILogger log)
         {
-            List<Tag> tags = await TagController.Instance.GetAllTags();
+            List<Tag> tags = await TagController.Instance.GetAllTagsAsync();
 
             return tags.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, tags, "application/json")
@@ -30,7 +30,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("EditTags")]
-        public static async Task<HttpResponseMessage> EditTags(
+        public static async Task<HttpResponseMessage> EditTagsAsync(
            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Tags/Edit/{id}")] HttpRequestMessage req,
            ILogger log, string id)
         {
@@ -43,7 +43,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
             }
 
-            int rowsAffected = await TagController.Instance.EditTag(tag, id);
+            int rowsAffected = await TagController.Instance.EditTagAsync(tag, id);
 
             //controleren of er rows in de DB zijn aangepast return 400
             if (rowsAffected == 0)
@@ -59,7 +59,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("CreateTag")]
-        public static async Task<HttpResponseMessage> CreateTag(
+        public static async Task<HttpResponseMessage> CreateTagAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Tags/Create")] HttpRequestMessage req,
             ILogger log)
         {
@@ -73,7 +73,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Tag name is not filled in", "application/json");
             }
 
-            int rowsAffected = await TagController.Instance.CreateTag(tag);
+            int rowsAffected = await TagController.Instance.CreateTagAsync(tag);
 
             if (rowsAffected > 0)
             {
@@ -87,7 +87,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("DeleteTags")]
-        public static async Task<HttpResponseMessage> DeleteTags(
+        public static async Task<HttpResponseMessage> DeleteTagsAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Tags/Delete/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -96,7 +96,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
             }
 
-            int rowsAffected = await TagController.Instance.DeleteTag(Convert.ToInt32(id));
+            int rowsAffected = await TagController.Instance.DeleteTagAsync(Convert.ToInt32(id));
 
             if (rowsAffected == 0)
             {

@@ -8,7 +8,7 @@ namespace GildtAPI.DAO
 {
     class RewardsDAO : Singleton<RewardsDAO>
     {
-        public async Task<Reward> GetRewardById(int rewardId)
+        public async Task<Reward> GetRewardByIdAsync(int rewardId)
         {
             //SQL query to get newest reward with name
             string sqlQuery = "SELECT TOP (1) " +
@@ -42,7 +42,8 @@ namespace GildtAPI.DAO
 
             return rewardsList.ToArray()[0];
         }
-        public async Task<Reward> GetRewardByName(string rewardName)
+
+        public async Task<Reward> GetRewardByNameAsync(string rewardName)
         {
             //SQL query to get newest reward with name
             string sqlQuery =
@@ -73,7 +74,8 @@ namespace GildtAPI.DAO
             }
             return null;
         }
-        public async Task<Reward[]> GetAllRewards()
+
+        public async Task<Reward[]> GetAllRewardsAsync()
         {
             //SQL query to get rewards and their names+description for selected user
             string sqlQuery =
@@ -102,7 +104,8 @@ namespace GildtAPI.DAO
             }
             return rewardsList.ToArray();
         }
-        public async Task<Reward[]> GetUserRewards(int count, int userId)
+
+        public async Task<Reward[]> GetUserRewardsAsync(int count, int userId)
         {
             //SQL query to get rewards and their names+description for selected user
             string sqlQuery = $"SELECT TOP {count} Rewards.Id, Rewards.Name, Rewards.Description FROM UsersRewards " +
@@ -134,7 +137,7 @@ namespace GildtAPI.DAO
             return rewardsList.ToArray();
         }
 
-        public async Task<bool> CreateReward(string name, string description)
+        public async Task<bool> CreateRewardAsync(string name, string description)
         {
             // Queries
             //Query to insert new row into rewards with name and description
@@ -173,7 +176,8 @@ namespace GildtAPI.DAO
                 return true;
             }
         }
-        public async Task<int> EditReward(int rewardId, string name, string description)
+
+        public async Task<int> EditRewardAsync(int rewardId, string name, string description)
         {
             var query = "UPDATE Rewards " +
                         "SET Name = " +

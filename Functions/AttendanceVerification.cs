@@ -16,12 +16,12 @@ namespace GildtAPI.Functions
 {
     public static class AttendanceVerification
     {
-        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(GetVerifications))]
-        public static async Task<IActionResult> GetVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
+        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(GetVerificationsAsync))]
+        public static async Task<IActionResult> GetVerificationsAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get",
             Route = "Attendance/{eventId?}")] HttpRequest req, ILogger log,
             int? eventId)
         {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetVerifications));
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetVerificationsAsync));
 
             string qCount = req.Query["count"];
             int count;
@@ -38,7 +38,7 @@ namespace GildtAPI.Functions
                 count = Constants.DEFAULTCOUNT;
             }
 
-            List<Attendance> attendanceList = await AttendanceDAO.Instance.GetAttendanceList(eventId, count);
+            List<Attendance> attendanceList = await AttendanceDAO.Instance.GetAttendanceListAsync(eventId, count);
             if (attendanceList.Count == 0)
             {
                 return new BadRequestObjectResult($"No verifications found for event with id = {eventId}");
@@ -47,13 +47,13 @@ namespace GildtAPI.Functions
             return new OkObjectResult(jAttendance);
         }
 
-        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(GetUserVerifications))]
-        public static async Task<IActionResult> GetUserVerifications([HttpTrigger(AuthorizationLevel.Anonymous, "get",
+        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(GetUserVerificationsAsync))]
+        public static async Task<IActionResult> GetUserVerificationsAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get",
             Route = "User/{userId}/Attendance/")] HttpRequest req, ILogger log,
             int userId)
         
 {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetUserVerifications));
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetUserVerificationsAsync));
 
             string qCount = req.Query["count"];
             int count;
@@ -70,7 +70,7 @@ namespace GildtAPI.Functions
                 count = Constants.DEFAULTCOUNT;
             }
 
-            List<Attendance> attendanceList = await AttendanceDAO.Instance.GetUserAttendanceList(userId, count);
+            List<Attendance> attendanceList = await AttendanceDAO.Instance.GetUserAttendanceListAsync(userId, count);
             if (attendanceList.Count == 0)
             {
                 return new BadRequestObjectResult($"No verifications found for user#{userId}");
@@ -79,13 +79,13 @@ namespace GildtAPI.Functions
             return new OkObjectResult(jAttendance);
         }
 
-        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(Verify))]
-        public static async Task<IActionResult> Verify([HttpTrigger(AuthorizationLevel.Anonymous, "post",
+        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(VerifyAsync))]
+        public static async Task<IActionResult> VerifyAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post",
             Route = "Attendance/{eventId}/Verify/{userId}")] HttpRequest req, ILogger log,
             int userId, int eventId)
         {
             //check if verification exists
-            if (await AttendanceDAO.Instance.CheckVerification(userId, eventId))
+            if (await AttendanceDAO.Instance.CheckVerificationAsync(userId, eventId))
             {
                 return new BadRequestObjectResult($"Verification already exists for user #{userId} at event #{eventId}");
             }
@@ -93,7 +93,7 @@ namespace GildtAPI.Functions
             {
                 try
                 {
-                    await AttendanceDAO.Instance.CreateVerification(userId, eventId);
+                    await AttendanceDAO.Instance.CreateVerificationAsync(userId, eventId);
                 }
                 catch
                 {
@@ -104,12 +104,12 @@ namespace GildtAPI.Functions
             }
         }
 
-        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(DeleteVerification))]
-        public static async Task<IActionResult> DeleteVerification([HttpTrigger(AuthorizationLevel.Anonymous, "delete",
+        [FunctionName(nameof(AttendanceVerification) + "-" + nameof(DeleteVerificationAsync))]
+        public static async Task<IActionResult> DeleteVerificationAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete",
             Route = "Attendance/{eventId}/Delete/{userId}")] HttpRequest req, ILogger log,
             int userId, int eventId)
         {
-            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteVerification)}");
+            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteVerificationAsync)}");
             if (eventId < 1 || userId < 1)
             {
                 return new BadRequestObjectResult("Invalid parameters.");
@@ -117,7 +117,7 @@ namespace GildtAPI.Functions
             int affectedRows;
             try
             {
-                affectedRows = await AttendanceDAO.Instance.DeleteVerification(userId, eventId);
+                affectedRows = await AttendanceDAO.Instance.DeleteVerificationAsync(userId, eventId);
             }
             catch
             {

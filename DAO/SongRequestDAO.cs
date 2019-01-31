@@ -12,7 +12,7 @@ namespace GildtAPI.DAO
         // all songrequests
         private static List<SongRequest> songRequests = new List<SongRequest>();
 
-        public async Task<List<SongRequest>> GetAllSongrequests()
+        public async Task<List<SongRequest>> GetAllSongrequestsAsync()
         {
             string sqlAllRequests =
                 $"SELECT sr.Id AS RequestId,sr.DateTime ,sr.UserId, sr.Title, sr.Artist," +
@@ -26,16 +26,16 @@ namespace GildtAPI.DAO
                 "u.RequestId, u.Vote ) as uv ON sr.Id = uv.RequestID ";
 
             SqlConnection conn = DBConnect.GetConnection();
-            await addSongRequestList(sqlAllRequests, conn);
+            await AddSongRequestListAsync(sqlAllRequests, conn);
             DBConnect.Dispose(conn);
             return songRequests;
 
         }
 
         //single songrequest 
-        public async Task<SongRequest> GetSongrequest(int id)
+        public async Task<SongRequest> GetSongrequestAsync(int id)
         {
-            List<SongRequest> songRequestsList = await GetAllSongrequests();
+            List<SongRequest> songRequestsList = await GetAllSongrequestsAsync();
 
             foreach (SongRequest songrequests in songRequestsList)
             {
@@ -48,7 +48,7 @@ namespace GildtAPI.DAO
             return null;
         }
 
-        public async Task<int> DeleteSongrequest(int id)
+        public async Task<int> DeleteSongrequestAsync(int id)
         {
             int rowsAffected;
             string sqlStr = $"DELETE SongRequest WHERE Id = @id";
@@ -61,7 +61,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> Upvote(int RequestId, int UserId)
+        public async Task<int> UpvoteAsync(int RequestId, int UserId)
         {
             int vote = 1;
             int rowsAffected;
@@ -109,7 +109,7 @@ namespace GildtAPI.DAO
             }
         }
 
-        public async Task<int> Downvote(int RequestId, int UserId)
+        public async Task<int> DownvoteAsync(int RequestId, int UserId)
         {
             int vote = -1;
             int rowsAffected;
@@ -154,7 +154,7 @@ namespace GildtAPI.DAO
             }
         }
 
-        public async Task<int> AddSongRequest(SongRequest song)
+        public async Task<int> AddSongRequestAsync(SongRequest song)
         {
             int rowsAffected;
 
@@ -180,7 +180,7 @@ namespace GildtAPI.DAO
         }
 
 
-        private async Task addSongRequestList(string sqlAllRequests, SqlConnection conn)
+        private async Task AddSongRequestListAsync(string sqlAllRequests, SqlConnection conn)
         {
             songRequests.Clear();
             using (SqlCommand cmd = new SqlCommand(sqlAllRequests, conn))

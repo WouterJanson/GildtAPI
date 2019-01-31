@@ -16,11 +16,11 @@ namespace GildtAPI.Functions
 {
     public static class Rewards
     {
-        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewards))]
-        public static async Task<IActionResult> GetRewards([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsAsync))]
+        public static async Task<IActionResult> GetRewardsAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
             Route = nameof(Rewards))] HttpRequest req, ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewards));
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsAsync));
             string qCount = req.Query["count"];
             string qRewardName = req.Query["name"];
             string qRewardId = req.Query["id"];
@@ -41,14 +41,14 @@ namespace GildtAPI.Functions
                         return new BadRequestObjectResult("Invalid count. Count must be 1 or higher.");
                     }
                 }
-                Reward[] rewards = await RewardsDAO.Instance.GetAllRewards();
+                Reward[] rewards = await RewardsDAO.Instance.GetAllRewardsAsync();
                 rewardsJson = JsonConvert.SerializeObject(rewards);
                 return new OkObjectResult(rewardsJson);
             }
             else if (!validId && validName)
             {
                 //No rewardId entered: get reward by name
-                var reward = await RewardsDAO.Instance.GetRewardByName(qRewardName);
+                var reward = await RewardsDAO.Instance.GetRewardByNameAsync(qRewardName);
                 if (reward == null)
                 {
                     return new NotFoundObjectResult("No rewards with this name.");
@@ -57,7 +57,7 @@ namespace GildtAPI.Functions
             }
             else
             {
-                Reward reward = await RewardsDAO.Instance.GetRewardById(rewardId);
+                Reward reward = await RewardsDAO.Instance.GetRewardByIdAsync(rewardId);
                 if (reward == null)
                 {
                     return new NotFoundObjectResult("Reward not found.");
@@ -69,12 +69,12 @@ namespace GildtAPI.Functions
 
         }
 
-        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUser))]
-        public static async Task<IActionResult> GetRewardsForUser([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
+        [FunctionName(nameof(Rewards) + "-" + nameof(GetRewardsForUserAsync))]
+        public static async Task<IActionResult> GetRewardsForUserAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", 
             Route = "User/{userId}/Rewards")] HttpRequest req, ILogger log, 
             string userId)
         {
-            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUser));
+            log.LogInformation("C# HTTP trigger function processed a request: " + nameof(GetRewardsForUserAsync));
             string qCount = req.Query["count"];
             int count = Constants.DEFAULTCOUNT;
             if (qCount != null)
@@ -88,7 +88,7 @@ namespace GildtAPI.Functions
             {
                 return new BadRequestObjectResult("Invalid input");
             }
-            Reward[] userRewards = await RewardsDAO.Instance.GetUserRewards(count, id);
+            Reward[] userRewards = await RewardsDAO.Instance.GetUserRewardsAsync(count, id);
 
             if (userRewards.Length == 0)
             {
@@ -99,10 +99,10 @@ namespace GildtAPI.Functions
         }
 
 
-        [FunctionName(nameof(Rewards) + "-" + nameof(CreateReward))]
-        public static async Task<IActionResult> CreateReward([HttpTrigger(AuthorizationLevel.Anonymous, "post", 
+        [FunctionName(nameof(Rewards) + "-" + nameof(CreateRewardAsync))]
+        public static async Task<IActionResult> CreateRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", 
             Route = "Rewards/Create")] HttpRequest req, ILogger log){
-            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateReward)}");
+            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateRewardAsync)}");
             // Read data from input
             //var data = req.Content.ReadAsStringAsync().Result;
             string name = req.Query["name"];
@@ -122,7 +122,7 @@ namespace GildtAPI.Functions
                     : "description");
                 return new BadRequestObjectResult(missingFieldsSummary);
             }
-            bool success = await RewardsDAO.Instance.CreateReward(name, description);
+            bool success = await RewardsDAO.Instance.CreateRewardAsync(name, description);
             if (success)
             {
                 return new OkObjectResult($"Reward \"{name}\" created!");
@@ -130,8 +130,8 @@ namespace GildtAPI.Functions
             else return new BadRequestObjectResult($"Reward \"{name}\" already exists!");
         }
 
-        [FunctionName(nameof(Rewards) + "-" + nameof(EditReward))]
-        public static async Task<IActionResult> EditReward([HttpTrigger(AuthorizationLevel.Anonymous, "put", 
+        [FunctionName(nameof(Rewards) + "-" + nameof(EditRewardAsync))]
+        public static async Task<IActionResult> EditRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "put", 
             Route = "Rewards/{rewardId}/Edit")] HttpRequest req, ILogger log, 
             int rewardId)
         {
@@ -150,7 +150,7 @@ namespace GildtAPI.Functions
             int rowsaffected;
             try
             {
-                rowsaffected = await RewardsDAO.Instance.EditReward(rewardId, name, description);
+                rowsaffected = await RewardsDAO.Instance.EditRewardAsync(rewardId, name, description);
             }
             catch(Exception e)
             {
@@ -168,12 +168,12 @@ namespace GildtAPI.Functions
 
         }
 
-        [FunctionName( nameof(Rewards) + "-" + nameof(DeleteReward))]
-        public static async Task<IActionResult> DeleteReward([HttpTrigger(AuthorizationLevel.Anonymous, "delete", 
+        [FunctionName( nameof(Rewards) + "-" + nameof(DeleteRewardAsync))]
+        public static async Task<IActionResult> DeleteRewardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", 
             Route = "Rewards/{rewardId}/Delete")] HttpRequest req, ILogger log,
             int rewardId)
         {
-            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteReward)}");
+            log.LogInformation($"C# HTTP trigger function processed a request: {nameof(DeleteRewardAsync)}");
             
             if (rewardId < 1)
             {

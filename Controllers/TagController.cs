@@ -8,24 +8,24 @@ namespace GildtAPI.Controllers
 {
     class TagController : Singleton<TagController>
     {
-        public async Task<List<Tag>> GetAllTags()
+        public async Task<List<Tag>> GetAllTagsAsync()
         {
-            return await TagDAO.Instance.GetAllTags();
+            return await TagDAO.Instance.GetAllTagsAsync();
         }
 
-        public async Task<int> CreateTag(string tag)
+        public async Task<int> CreateTagAsync(string tag)
         {
-            return await TagDAO.Instance.CreateTag(tag);
+            return await TagDAO.Instance.CreateTagAsync(tag);
         }
 
-        public async Task<int> DeleteTag(int tagid)
+        public async Task<int> DeleteTagAsync(int tagid)
         {
-            return await TagDAO.Instance.DeleteTag(tagid);
+            return await TagDAO.Instance.DeleteTagAsync(tagid);
         }
 
-        public async Task<int> EditTag(string tag, string id)
+        public async Task<int> EditTagAsync(string tag, string id)
         {
-            return await TagDAO.Instance.EditTag(tag, id);
+            return await TagDAO.Instance.EditTagAsync(tag, id);
         }
     }
 }

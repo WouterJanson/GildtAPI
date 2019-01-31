@@ -9,7 +9,7 @@ namespace GildtAPI.DAO
     class AttendanceDAO : Singleton<AttendanceDAO>
     {
         // Verify single user/event
-        public async Task<bool> CheckVerification(int userId, int eventId)
+        public async Task<bool> CheckVerificationAsync(int userId, int eventId)
         {
             //Get query to check if verification already exists
             var sqlGet =
@@ -30,7 +30,7 @@ namespace GildtAPI.DAO
             return false;
         }
 
-        public async Task<List<Attendance>> GetUserAttendanceList(int userId, int count)
+        public async Task<List<Attendance>> GetUserAttendanceListAsync(int userId, int count)
         {
             var sqlAttendance =
                 $"SELECT TOP {count} " +
@@ -63,7 +63,7 @@ namespace GildtAPI.DAO
             return attendanceList;
         }
 
-        public async Task<List<Attendance>> GetAttendanceList(int? eventId, int count)
+        public async Task<List<Attendance>> GetAttendanceListAsync(int? eventId, int count)
         {
             var sqlAttendance =
                 $"SELECT TOP {count} " +
@@ -103,7 +103,7 @@ namespace GildtAPI.DAO
             return attendanceList;
         }
 
-        public async Task CreateVerification(int userId, int eventId)
+        public async Task CreateVerificationAsync(int userId, int eventId)
         {
             // Queries
             //Query to insert new row into AttendanceVerification
@@ -125,7 +125,7 @@ namespace GildtAPI.DAO
             DBConnect.Dispose(conn);
         }
 
-        public async Task<int> DeleteVerification(int userId, int eventId)
+        public async Task<int> DeleteVerificationAsync(int userId, int eventId)
         {
             // Queries
             var sqlStr =

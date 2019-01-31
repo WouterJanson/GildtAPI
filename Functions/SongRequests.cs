@@ -17,12 +17,12 @@ namespace GildtAPI.Functions
     public static class SongRequests
     {
         [FunctionName("SongRequests")]
-        public static async Task<HttpResponseMessage> GetSongRequests(
+        public static async Task<HttpResponseMessage> GetSongRequestsAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest")]HttpRequestMessage req,
             ILogger log)
         {
 
-            List<SongRequest> songRequests = await SongRequestController.Instance.GetAllSongrequests();
+            List<SongRequest> songRequests = await SongRequestController.Instance.GetAllSongrequestsAsync();
             
             if (songRequests.Count >= 0)
             {
@@ -36,7 +36,7 @@ namespace GildtAPI.Functions
 
         }
         [FunctionName("SongRequest")]
-        public static async Task<HttpResponseMessage> GetSongRequest(
+        public static async Task<HttpResponseMessage> GetSongRequestAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SongRequest/{id}")]HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -45,7 +45,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            SongRequest songRequests = await SongRequestController.Instance.GetSongrequest(Convert.ToInt32(id));
+            SongRequest songRequests = await SongRequestController.Instance.GetSongrequestAsync(Convert.ToInt32(id));
             if (songRequests == null)
             {
                 return req.CreateResponse(HttpStatusCode.NotFound, "Songrequest does not exist");
@@ -54,7 +54,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("DeleteSongRequest")]
-        public static async Task<HttpResponseMessage> DeleteSongRequest(
+        public static async Task<HttpResponseMessage> DeleteSongRequestAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "Delete", Route = "SongRequest/{id}/")]
             HttpRequestMessage req,
             ILogger log, string id)
@@ -64,7 +64,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await SongRequestController.Instance.DeleteSongrequest(Convert.ToInt32(id));
+            int rowsAffected = await SongRequestController.Instance.DeleteSongrequestAsync(Convert.ToInt32(id));
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Songrequest does not exist");
@@ -75,7 +75,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("AddSongRequest")]
-        public static async Task<HttpResponseMessage> AddSongRequest(
+        public static async Task<HttpResponseMessage> AddSongRequestAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/Add/{id}")]
             HttpRequestMessage req,
             ILogger log, string id)
@@ -96,7 +96,7 @@ namespace GildtAPI.Functions
                 UserId = Convert.ToInt32(id)
             };
 
-            User verify = await UserController.Instance.Get(Convert.ToInt32(id));
+            User verify = await UserController.Instance.GetAsync(Convert.ToInt32(id));
             if (verify == null)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "User ID does not exist", "application/json");
@@ -108,7 +108,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Fields are not filled in.", "application/json");
             }
            
-            int rowsAffected = await SongRequestController.Instance.AddSongRequest(song);
+            int rowsAffected = await SongRequestController.Instance.AddSongRequestAsync(song);
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Error couldn't add, check input fields.", "application/json");
@@ -120,7 +120,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("UpVotesSongRequest")]
-        public static async Task<HttpResponseMessage> UpvoteSongRequest(
+        public static async Task<HttpResponseMessage> UpvoteSongRequestAsync(
            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/{RequestId}/{UserId}/upvote")]
             HttpRequestMessage req, string RequestId, string UserId,
            ILogger log)
@@ -131,7 +131,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await SongRequestController.Instance.UpVote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
+            int rowsAffected = await SongRequestController.Instance.UpVoteAsync(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");
@@ -142,7 +142,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("DownVotesSongRequest")]
-        public static async Task<HttpResponseMessage> DownvotesSongRequest(
+        public static async Task<HttpResponseMessage> DownvotesSongRequestAsync(
               [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "SongRequest/{RequestId}/{UserId}/downvote")]
             HttpRequestMessage req, string RequestId, string UserId,
               ILogger log)
@@ -151,7 +151,7 @@ namespace GildtAPI.Functions
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
-            int rowsAffected = await SongRequestController.Instance.Downvote(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
+            int rowsAffected = await SongRequestController.Instance.DownvoteAsync(Convert.ToInt32(RequestId), Convert.ToInt32(UserId));
             if (rowsAffected == 0)
             {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Error vote", "application/json");

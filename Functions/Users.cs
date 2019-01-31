@@ -18,11 +18,11 @@ namespace GildtAPI.Functions
     public static class Users
     {
         [FunctionName("GetUsers")]
-        public static async Task<HttpResponseMessage> GetUsers(
+        public static async Task<HttpResponseMessage> GetUsersAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Users")] HttpRequestMessage req,
             ILogger log)
         {
-            List<User> users = await UserController.Instance.GetAll();
+            List<User> users = await UserController.Instance.GetAllAsync();
 
             string j = JsonConvert.SerializeObject(users);
 
@@ -32,7 +32,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("GetUser")]
-        public static async Task<HttpResponseMessage> GetUser(
+        public static async Task<HttpResponseMessage> GetUserAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -42,7 +42,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            var user = await UserController.Instance.Get(Convert.ToInt32(id));
+            var user = await UserController.Instance.GetAsync(Convert.ToInt32(id));
 
             return user != null 
                 ? req.CreateResponse(HttpStatusCode.OK, user, "application/json")
@@ -51,7 +51,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("DeleteUser")]
-        public static async Task<HttpResponseMessage> DeleteUser(
+        public static async Task<HttpResponseMessage> DeleteUserAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -60,7 +60,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await UserController.Instance.Delete(Convert.ToInt32(id));
+            int rowsAffected = await UserController.Instance.DeleteAsync(Convert.ToInt32(id));
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the user.", "application/json")
@@ -69,7 +69,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("AddUser")]
-        public static async Task<HttpResponseMessage> AddUser(
+        public static async Task<HttpResponseMessage> AddUserAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Users/Register")] HttpRequestMessage req,
             ILogger log)
         {
@@ -92,7 +92,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
-            int rowsAffected = await UserController.Instance.Create(user);
+            int rowsAffected = await UserController.Instance.CreateAsync(user);
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the user.", "application/json")
@@ -100,7 +100,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("EditUser")]
-        public static async Task<HttpResponseMessage> EditUser(
+        public static async Task<HttpResponseMessage> EditUserAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route= "Users/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -115,7 +115,7 @@ namespace GildtAPI.Functions
                 IsAdmin = Convert.ToBoolean(formData["isadmin"])
             };
 
-            int rowsAffected = await UserController.Instance.Edit(user);
+            int rowsAffected = await UserController.Instance.EditAsync(user);
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the user.", "application/json")

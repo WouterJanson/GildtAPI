@@ -17,7 +17,7 @@ namespace GildtAPI.DAO
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            await AddCouponsToList(sqlStr, conn);
+            await AddCouponsToListAsync(sqlStr, conn);
 
             DBConnect.Dispose(conn);
 
@@ -39,7 +39,7 @@ namespace GildtAPI.DAO
             return null;
         }
 
-        public async Task<int> Create(Coupon coupon)
+        public async Task<int> CreateAsync(Coupon coupon)
         {
             int rowsAffected;
             string sqlStr =
@@ -74,7 +74,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> Delete(int id)
+        public async Task<int> DeleteAsync(int id)
         {
             int rowsAffected;
             string sqlStr = $"DELETE Coupons WHERE Id = @Id";
@@ -93,7 +93,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> Edit(Coupon coupon)
+        public async Task<int> EditAsync(Coupon coupon)
         {
             int rowsAffected;
             string sqlStrUpdate = $"UPDATE Coupons SET " +
@@ -125,7 +125,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> Signup(int userId, int couponId)
+        public async Task<int> SignupAsync(int userId, int couponId)
         {
             var sqlStr = $"INSERT INTO UsersCoupons (UserId, CouponId) VALUES (@UserId, @CouponId)";
             var sqlGet =
@@ -159,7 +159,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task AddCouponsToList(string sqlStr, SqlConnection conn)
+        public async Task AddCouponsToListAsync(string sqlStr, SqlConnection conn)
         {
             coupons.Clear();
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))

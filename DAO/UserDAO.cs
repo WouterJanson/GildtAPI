@@ -13,15 +13,15 @@ namespace GildtAPI.DAO
         private static List<UsersCoupon> couponsList = new List<UsersCoupon>();
 
         // Get all users 
-        public async Task<List<User>> GetAll()
+        public async Task<List<User>> GetAllAsync()
         {
             string sqlStrUsers = $"SELECT * FROM Users ";
             string sqlStrCoupons = "SELECT * FROM UsersCoupons INNER JOIN Coupons ON UsersCoupons.CouponId = Coupons.Id";
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            await addCouponsToList(sqlStrCoupons, conn);
-            await addUsersToList(sqlStrUsers, conn);
+            await AddCouponsToListAsync(sqlStrCoupons, conn);
+            await AddUsersToListAsync(sqlStrUsers, conn);
 
             DBConnect.Dispose(conn);
 
@@ -29,9 +29,9 @@ namespace GildtAPI.DAO
         }
 
         // Get single user
-        public async Task<User> Get(int id)
+        public async Task<User> GetAsync(int id)
         {
-            List<User> usersList = await GetAll();
+            List<User> usersList = await GetAllAsync();
 
             foreach(User user in usersList)
             {
@@ -45,7 +45,7 @@ namespace GildtAPI.DAO
         }
 
         // Delete single user
-        public async Task<int> Delete(int id)
+        public async Task<int> DeleteAsync(int id)
         {
             int rowsAffected;
             string sqlStr = $"DELETE FROM Users WHERE Users.Id = @Id";
@@ -64,13 +64,13 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> Create(User user)
+        public async Task<int> CreateAsync(User user)
         {
             string sqlStr =
             $"INSERT INTO Users (IsAdmin, Username, Email, Password) VALUES ('false', @Username, @Email, @Password)";
             int rowsAffected;
 
-            List<User> usersList = await GetAll();
+            List<User> usersList = await GetAllAsync();
 
             foreach (User u in usersList)
             {
@@ -96,7 +96,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> Edit(User user)
+        public async Task<int> EditAsync(User user)
         {
             string sqlStrUpdate = $"UPDATE Users SET " +
             $"Username = COALESCE({(user.Username == null ? "NULL" : "@Username")}, Username), " +
@@ -125,7 +125,7 @@ namespace GildtAPI.DAO
         }
 
 
-        private async Task addCouponsToList(string sqlStrCoupons, SqlConnection conn)
+        private async Task AddCouponsToListAsync(string sqlStrCoupons, SqlConnection conn)
         {
             couponsList.Clear();
             using (SqlCommand cmdCoupons = new SqlCommand(sqlStrCoupons, conn))
@@ -152,7 +152,7 @@ namespace GildtAPI.DAO
             }
         }
 
-        private async Task addUsersToList(string sqlStrUsers, SqlConnection conn)
+        private async Task AddUsersToListAsync(string sqlStrUsers, SqlConnection conn)
         {
             users.Clear();
             using(SqlCommand cmdUsers = new SqlCommand(sqlStrUsers, conn))

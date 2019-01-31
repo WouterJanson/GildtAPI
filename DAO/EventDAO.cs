@@ -11,7 +11,7 @@ namespace GildtAPI.DAO
     {
         private static List<Event> events = new List<Event>();
 
-        public async Task<List<Event>> GetAllEvents()
+        public async Task<List<Event>> GetAllEventsAsync()
         {
             // get all events Query
             string sqlStr = $"SELECT Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
@@ -20,16 +20,16 @@ namespace GildtAPI.DAO
 
             SqlConnection conn = DBConnect.GetConnection();
 
-            await AddEventsToList(sqlStr, conn);
+            await AddEventsToListAsync(sqlStr, conn);
 
             DBConnect.Dispose(conn);
 
             return events;
         }
 
-        public async Task<Event> GetTheEvent(int id)
+        public async Task<Event> GetTheEventAsync(int id)
         {
-            List<Event> eventslist = await GetAllEvents();
+            List<Event> eventslist = await GetAllEventsAsync();
 
             foreach (Event evenT in eventslist)
             {
@@ -44,7 +44,7 @@ namespace GildtAPI.DAO
             return null;
         }
 
-        public async Task<int> DeleteEvent(int id)
+        public async Task<int> DeleteEventAsync(int id)
         {
             //queries
             string sqlStr = $"DELETE Events WHERE Id = @id";
@@ -64,11 +64,11 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> CreateEvent(Event evenT)
+        public async Task<int> CreateEventAsync(Event evenT)
         {
             int RowsAffected;
 
-            List<Event> eventsList = await GetAllEvents();
+            List<Event> eventsList = await GetAllEventsAsync();
 
             //check if event already exist
             foreach (Event e in eventsList)
@@ -105,11 +105,11 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> EditEvent(Event evenT)
+        public async Task<int> EditEventAsync(Event evenT)
         {
             int RowsAffected;
 
-            Event DesiredEvent = await GetTheEvent(evenT.Id);
+            Event DesiredEvent = await GetTheEventAsync(evenT.Id);
 
             //check if event exist
             if (DesiredEvent == null)
@@ -151,7 +151,7 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> AddTagToEvent(int eventId, int tagId)
+        public async Task<int> AddTagToEventAsync(int eventId, int tagId)
         {
             int RowsAffected;
 
@@ -160,7 +160,7 @@ namespace GildtAPI.DAO
             // querry to validate Tag (does it exist?)
             string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";
 
-            Event DesiredEvent = await GetTheEvent(eventId);
+            Event DesiredEvent = await GetTheEventAsync(eventId);
 
             //check if event exist
             if (DesiredEvent == null)
@@ -211,7 +211,7 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> RemoveTagFromEvent(int eventId, int tagId)
+        public async Task<int> RemoveTagFromEventAsync(int eventId, int tagId)
         {
             int RowsAffected;
 
@@ -220,7 +220,7 @@ namespace GildtAPI.DAO
             // querry to validate Tag (does it exist?)
             string sqlTagCheckStr = $"SELECT Id FROM Tags WHERE id = @tagId";           
 
-            Event DesiredEvent = await GetTheEvent(eventId);
+            Event DesiredEvent = await GetTheEventAsync(eventId);
 
             //check if event exist
             if (DesiredEvent == null)
@@ -262,7 +262,7 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task AddEventsToList(string sqlStr, SqlConnection conn)
+        public async Task AddEventsToListAsync(string sqlStr, SqlConnection conn)
         {
             events.Clear();
             using (SqlCommand cmd = new SqlCommand(sqlStr, conn))

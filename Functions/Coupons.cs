@@ -18,11 +18,11 @@ namespace GildtAPI.Functions
     public static class Coupons
     {
         [FunctionName("GetAllCoupons")]
-        public static async Task<HttpResponseMessage> GetCoupons(
+        public static async Task<HttpResponseMessage> GetCouponsAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons")] HttpRequestMessage req,
             ILogger log)
         {
-            List<Coupon> coupons = await CouponController.Instance.GetAll();
+            List<Coupon> coupons = await CouponController.Instance.GetAllAsync();
 
             string j = JsonConvert.SerializeObject(coupons);
 
@@ -32,7 +32,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("GetSingleCoupon")]
-        public static async Task<HttpResponseMessage> GetCoupon(
+        public static async Task<HttpResponseMessage> GetCouponAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Coupons/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -42,7 +42,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            Coupon coupon = await CouponController.Instance.Get(Convert.ToInt32(id));
+            Coupon coupon = await CouponController.Instance.GetAsync(Convert.ToInt32(id));
 
             return coupon != null
                 ? req.CreateResponse(HttpStatusCode.OK, coupon, "application/json")
@@ -50,21 +50,24 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("AddCoupon")]
-        public static async Task<HttpResponseMessage> AddCoupon(
+        public static async Task<HttpResponseMessage> AddCouponAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons")] HttpRequestMessage req,
             ILogger log)
         {
             List<string> missingFields = new List<string>();
-            Coupon coupon = new Coupon();
 
             // Read data from input
             NameValueCollection formData = req.Content.ReadAsFormDataAsync().Result;
-            coupon.Name = formData["Name"];
-            coupon.Description = formData["Description"];
-            coupon.StartDate = Convert.ToDateTime(formData["StartDate"]);
-            coupon.EndDate = Convert.ToDateTime(formData["EndDate"]);
-            coupon.Type = Convert.ToInt32(formData["Type"]);
-            coupon.Image = formData["Image"];
+
+            var coupon = new Coupon
+            {
+                Name = formData["Name"],
+                Description = formData["Description"],
+                StartDate = Convert.ToDateTime(formData["StartDate"]),
+                EndDate = Convert.ToDateTime(formData["EndDate"]),
+                Type = Convert.ToInt32(formData["Type"]),
+                Image = formData["Image"]
+            };
 
 
             bool inputIsValid = GlobalFunctions.CheckInputs(coupon.Name, coupon.Description, coupon.StartDate.ToString(), coupon.EndDate.ToString(), coupon.Type.ToString(), coupon.Image);
@@ -74,7 +77,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all fields are filled in.", "application/json");
             }
 
-            int rowsAffected = await CouponController.Instance.Create(coupon);
+            int rowsAffected = await CouponController.Instance.CreateAsync(coupon);
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully created the coupon.", "application/json")
@@ -82,7 +85,7 @@ namespace GildtAPI.Functions
         } 
        
         [FunctionName("DeleteCoupons")]
-        public static async Task<HttpResponseMessage> DeleteCoupon(
+        public static async Task<HttpResponseMessage> DeleteCouponAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Coupons/{id?}")] HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -91,7 +94,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await CouponController.Instance.Delete(Convert.ToInt32(id));
+            int rowsAffected = await CouponController.Instance.DeleteAsync(Convert.ToInt32(id));
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully deleted the coupon.", "application/json")
@@ -99,7 +102,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("EditCoupon")]
-        public static async Task<HttpResponseMessage> EditCoupon(
+        public static async Task<HttpResponseMessage> EditCouponAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Coupons/{id}")] HttpRequestMessage req,
             ILogger log, string id)
             {
@@ -112,7 +115,7 @@ namespace GildtAPI.Functions
                 string type = formData["Type"];
                 string image = formData["Image"];
                 
-                int rowsAffected = await CouponController.Instance.Edit(coupon);
+                int rowsAffected = await CouponController.Instance.EditAsync(coupon);
 
                 return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully edited the coupon.", "application/json")
@@ -121,7 +124,7 @@ namespace GildtAPI.Functions
         }
 
         [FunctionName("SignupCoupon")]
-        public static async Task<HttpResponseMessage> SignupCoupon(
+        public static async Task<HttpResponseMessage> SignupCouponAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Coupons/{couponId}/Signup/{userId}")] HttpRequestMessage req,
             ILogger log, string couponId, string userId)
         {
@@ -131,7 +134,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await CouponController.Instance.SignUp(Convert.ToInt32(couponId), Convert.ToInt32(userId));
+            int rowsAffected = await CouponController.Instance.SignUpAsync(Convert.ToInt32(couponId), Convert.ToInt32(userId));
 
             return rowsAffected > 0
                 ? req.CreateResponse(HttpStatusCode.OK, "Successfully signed up.", "application/json")

@@ -8,34 +8,34 @@ namespace GildtAPI.Controllers
 {
     class CouponController : Singleton<CouponController>
     {
-        public async Task<List<Coupon>> GetAll()
+        public async Task<List<Coupon>> GetAllAsync()
         {
             return await CouponDAO.Instance.GetAll();
         }
 
-        public async Task<Coupon> Get(int id)
+        public async Task<Coupon> GetAsync(int id)
         {
             return await CouponDAO.Instance.Get(id);
         }
 
-        public async Task<int> Create(Coupon coupon)
+        public async Task<int> CreateAsync(Coupon coupon)
         {
-            return await CouponDAO.Instance.Create(coupon);
+            return await CouponDAO.Instance.CreateAsync(coupon);
         }
 
-        public async Task<int> Delete(int id)
+        public async Task<int> DeleteAsync(int id)
         {
-            return await CouponDAO.Instance.Delete(id);
+            return await CouponDAO.Instance.DeleteAsync(id);
         }
 
-        public async Task<int> Edit(Coupon coupon)
+        public async Task<int> EditAsync(Coupon coupon)
         {
-            return await CouponDAO.Instance.Edit(coupon);
+            return await CouponDAO.Instance.EditAsync(coupon);
         }
 
-        public async Task<int> SignUp(int couponId, int userId)
+        public async Task<int> SignUpAsync(int couponId, int userId)
         {
-            return await CouponDAO.Instance.Signup(couponId, userId);
+            return await CouponDAO.Instance.SignupAsync(couponId, userId);
         }
 
     }

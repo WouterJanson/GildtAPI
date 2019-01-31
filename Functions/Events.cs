@@ -17,11 +17,11 @@ namespace GildtAPI.Functions
     public static class Events
     {
         [FunctionName("GetAllEvents")]
-        public static async Task<HttpResponseMessage> GetAllEvents(
+        public static async Task<HttpResponseMessage> GetAllEventsAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events")] HttpRequestMessage req,
             ILogger log)
         {
-            List<Event> events = await EventController.Instance.GetAll();
+            List<Event> events = await EventController.Instance.GetAllAsync();
 
             return events.Count >= 1
                 ? req.CreateResponse(HttpStatusCode.OK, events, "application/json")
@@ -31,7 +31,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("GetEvent")]
-        public static async Task<HttpResponseMessage> GetEvent(
+        public static async Task<HttpResponseMessage> GetEventAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Events/{id}")] HttpRequestMessage req,
          ILogger log, string id)
         {
@@ -40,7 +40,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and no should not contain special characters", "application/json");
             }
 
-            Event evenT = await EventController.Instance.GetEvent(Convert.ToInt32(id));
+            Event evenT = await EventController.Instance.GetEventAsync(Convert.ToInt32(id));
 
             // check if a event is found by given id, if not than give a 404 not found
             if (evenT == null)
@@ -53,7 +53,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("DeleteEvent")]
-        public static async Task<HttpResponseMessage> DeleteEvent(
+        public static async Task<HttpResponseMessage> DeleteEventAsync(
            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Delete/{id}")] HttpRequestMessage req,
            ILogger log, string id)
         {
@@ -63,7 +63,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.DeleteEvent(Convert.ToInt32(id));
+            int rowsAffected = await EventController.Instance.DeleteEventAsync(Convert.ToInt32(id));
 
             if (rowsAffected > 0)
             {
@@ -78,7 +78,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("CreateEvent")]
-        public static async Task<HttpResponseMessage> CreateEvent(
+        public static async Task<HttpResponseMessage> CreateEventAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Add")] HttpRequestMessage req,
             ILogger log)
         {
@@ -102,7 +102,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, $"Not all required fields are filled in. Be sure that name, location and dates are filled in...", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.CreateEvent(evenT);
+            int rowsAffected = await EventController.Instance.CreateEventAsync(evenT);
 
             if (rowsAffected > 0)
             {
@@ -116,7 +116,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("EditEvent")]
-        public static async Task<HttpResponseMessage> EditEvent(
+        public static async Task<HttpResponseMessage> EditEventAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "Events/Edit/{id}")] HttpRequestMessage req,
             ILogger log, string id)
         {
@@ -140,7 +140,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid Id, Id should be numeric and should not contain special characters", "application/json");
             }
 
-            int RowsAffected = await EventController.Instance.EditEvent(evenT);
+            int RowsAffected = await EventController.Instance.EditEventAsync(evenT);
 
             if (RowsAffected > 0)
             {
@@ -154,7 +154,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("AddTagToEvent")]
-        public static async Task<HttpResponseMessage> AddTagToEvent(
+        public static async Task<HttpResponseMessage> AddTagToEventAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Events/Tags/Add/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
@@ -168,7 +168,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.AddTagToEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+            int rowsAffected = await EventController.Instance.AddTagToEventAsync(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
 
             if (rowsAffected > 0)
@@ -183,7 +183,7 @@ namespace GildtAPI.Functions
 
 
         [FunctionName("RemoveTagFromEvent")]
-        public static async Task<HttpResponseMessage> RemoveTagFromEvent(
+        public static async Task<HttpResponseMessage> RemoveTagFromEventAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "Events/Tags/Remove/{Eventid}/{tagId}")] HttpRequestMessage req,
             ILogger log, string Eventid, string TagId)
         {
@@ -197,7 +197,7 @@ namespace GildtAPI.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid TagId", "application/json");
             }
 
-            int rowsAffected = await EventController.Instance.RemoveTagFromEvent(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
+            int rowsAffected = await EventController.Instance.RemoveTagFromEventAsync(Convert.ToInt32(Eventid), Convert.ToInt32(TagId));
 
             if (rowsAffected > 0)
             {

@@ -10,7 +10,7 @@ namespace GildtAPI.DAO
     class TagDAO : Singleton<TagDAO>
     {
         
-        public async Task<List<Tag>> GetAllTags()
+        public async Task<List<Tag>> GetAllTagsAsync()
         {
             // get all events Query
             string sqlStr = "SELECT * FROM Tags";
@@ -33,7 +33,7 @@ namespace GildtAPI.DAO
             return tags;
         }
 
-        public async Task<int> DeleteTag(int Id)
+        public async Task<int> DeleteTagAsync(int Id)
         {
             //queries
             string sqlStr = $"DELETE Tags WHERE Id = @Id";
@@ -51,7 +51,7 @@ namespace GildtAPI.DAO
             return rowsAffected;
         }
 
-        public async Task<int> CreateTag(string tag)
+        public async Task<int> CreateTagAsync(string tag)
         {
             int RowsAffected;
 
@@ -89,7 +89,7 @@ namespace GildtAPI.DAO
             return RowsAffected;
         }
 
-        public async Task<int> EditTag(string tag, string id)
+        public async Task<int> EditTagAsync(string tag, string id)
         {
             int RowsAffected;
 

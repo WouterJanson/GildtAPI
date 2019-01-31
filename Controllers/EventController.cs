@@ -8,39 +8,39 @@ namespace GildtAPI.Controllers
 {
     class EventController : Singleton<EventController>
     {
-        public async Task<List<Event>> GetAll()
+        public async Task<List<Event>> GetAllAsync()
         {
-            return await EventDAO.Instance.GetAllEvents();
+            return await EventDAO.Instance.GetAllEventsAsync();
         }
 
-        public async Task<Event> GetEvent(int id)
+        public async Task<Event> GetEventAsync(int id)
         {
-            return await EventDAO.Instance.GetTheEvent(id);
+            return await EventDAO.Instance.GetTheEventAsync(id);
         }
 
-        public async Task<int> DeleteEvent(int id)
+        public async Task<int> DeleteEventAsync(int id)
         {
-            return await EventDAO.Instance.DeleteEvent(id);
+            return await EventDAO.Instance.DeleteEventAsync(id);
         }
 
-        public async Task<int> CreateEvent(Event evenT)
+        public async Task<int> CreateEventAsync(Event evenT)
         {
-            return await EventDAO.Instance.CreateEvent(evenT);
+            return await EventDAO.Instance.CreateEventAsync(evenT);
         }
 
-        public async Task<int> EditEvent(Event evenT)
+        public async Task<int> EditEventAsync(Event evenT)
         {
-            return await EventDAO.Instance.EditEvent(evenT);
+            return await EventDAO.Instance.EditEventAsync(evenT);
         }
 
-        public async Task<int> AddTagToEvent(int eventId, int tagId)
+        public async Task<int> AddTagToEventAsync(int eventId, int tagId)
         {
-            return await EventDAO.Instance.AddTagToEvent(eventId, tagId);
+            return await EventDAO.Instance.AddTagToEventAsync(eventId, tagId);
         }
 
-        public async Task<int> RemoveTagFromEvent(int eventId, int tagId)
+        public async Task<int> RemoveTagFromEventAsync(int eventId, int tagId)
         {
-            return await EventDAO.Instance.RemoveTagFromEvent(eventId, tagId);
+            return await EventDAO.Instance.RemoveTagFromEventAsync(eventId, tagId);
         }
 
     }
