@@ -96,7 +96,6 @@ namespace GildtAPI.Functions
         {
             log.LogInformation($"C# HTTP trigger function processed a request: {nameof(CreateRewardAsync)}");
             // Read data from input
-            //var data = req.Content.ReadAsStringAsync().Result;
             string name = req.Query["name"];
             string description = req.Query["description"];
 
