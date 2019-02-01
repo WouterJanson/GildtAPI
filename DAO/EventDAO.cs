@@ -14,7 +14,7 @@ namespace GildtAPI.DAO
         public async Task<List<Event>> GetAllEventsAsync()
         {
             // get all events Query
-            string sqlStr = $"SELECT Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Tag, TagId FROM Events " +
+            string sqlStr = $"SELECT Events.Id as EventId, Events.Name, Events.EndDate, Events.StartDate, Events.Image, Events.Location, Events.IsActive, Events.ShortDescription, Events.LongDescription, Events.DressCode, Tag, TagId FROM Events " +
                 $"LEFT JOIN (SELECT EventsTags.EventsId, Tags.Name AS Tag, Tags.Id AS TagId FROM EventsTags " +
                 $"LEFT JOIN Tags ON EventsTags.TagsId = Tags.Id) as tags ON Events.Id = tags.EventsId ORDER BY Events.Id";
 
@@ -72,7 +72,7 @@ namespace GildtAPI.DAO
 
             // Queries
             string sqlStr =
-            $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, Image, IsActive) VALUES (@Name, @Location, @StartDate, @EndDate, @ShortDescription, @LongDescription, @Image, 'false')";
+            $"INSERT INTO Events (Name, Location, StartDate, EndDate, ShortDescription, LongDescription, DressCode, Image, IsActive) VALUES (@Name, @Location, @StartDate, @EndDate, @ShortDescription, @LongDescription, @DressCode, @Image, 'false')";
 
             //Connects with the database
             using (var conn = DBConnect.GetConnection()) {
@@ -83,6 +83,7 @@ namespace GildtAPI.DAO
                     cmd.Parameters.AddWithValue("@EndDate", evenT.EndDate);
                     cmd.Parameters.AddWithValue("@ShortDescription", evenT.ShortDescription);
                     cmd.Parameters.AddWithValue("@LongDescription", evenT.LongDescription);
+                    cmd.Parameters.AddWithValue("@DressCode", evenT.DressCode);
                     cmd.Parameters.AddWithValue("@Image", evenT.Image);
 
                     RowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -111,6 +112,7 @@ namespace GildtAPI.DAO
                 $"EndDate = COALESCE({(evenT.EndDate == DateTime.MinValue ? "NULL" : "@EndDate")}, EndDate), " +
                 $"ShortDescription = COALESCE({(evenT.ShortDescription == null ? "NULL" : "@ShortDescription")}, ShortDescription), " +
                 $"LongDescription = COALESCE({(evenT.LongDescription == null ? "NULL" : "@LongDescription")}, LongDescription), " +
+                $"DressCode = COALESCE({(evenT.DressCode == null ? "NULL" : "@DressCode")}, DressCode), " +
                 $"Image = COALESCE({(evenT.Image == null ? "NULL" : "@Image")}, image), " +
                 $"IsActive = COALESCE({(evenT.IsActive == false ? "NULL" : "@IsActive")}, IsActive) " +
                 $" WHERE id = @Id";
@@ -125,6 +127,7 @@ namespace GildtAPI.DAO
                     cmd.Parameters.AddWithValue("@EndDate", ((object)evenT.EndDate) ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ShortDescription", ((object)evenT.ShortDescription) ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@LongDescription", ((object)evenT.LongDescription) ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DressCode", ((object)evenT.DressCode) ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Image", ((object)evenT.Image) ?? DBNull.Value);
 
                     RowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -249,7 +252,8 @@ namespace GildtAPI.DAO
                         Location = reader["location"].ToString(),
                         IsActive = (bool)reader["IsActive"],
                         ShortDescription = reader["ShortDescription"].ToString(),
-                        LongDescription = reader["LongDescription"].ToString()
+                        LongDescription = reader["LongDescription"].ToString(),
+                        DressCode = reader["DressCode"].ToString()
                     };
 
                     //check if it is the first event from the reader

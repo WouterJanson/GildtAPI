@@ -33,6 +33,9 @@ namespace GildtAPI.Model
         public string LongDescription { get; set; }
 
         [JsonProperty]
+        public string DressCode { get; set; }
+
+        [JsonProperty]
         public Tag[] Tags { get; set; }
 
     }

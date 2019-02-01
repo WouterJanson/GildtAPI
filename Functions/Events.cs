@@ -84,6 +84,7 @@ namespace GildtAPI.Functions
                 EndDate = DateTime.Parse(formData["dateTimeEnd"]),
                 ShortDescription = formData["shortdescription"],
                 LongDescription = formData["longdescription"],
+                DressCode = formData["dresscode"],
                 Image = formData["image"]
             };
 
@@ -117,6 +118,7 @@ namespace GildtAPI.Functions
                 EndDate = DateTime.Parse(formData["dateTimeEnd"]),
                 ShortDescription = formData["shortdescription"],
                 LongDescription = formData["longdescription"],
+                DressCode = formData["dresscode"],
                 Image = formData["image"]
             };
 
