@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -23,12 +24,18 @@ namespace GildtAPI.Functions
         {
             var events = await EventController.Instance.GetAllAsync();
 
-            return events.Count >= 1
-                ? req.CreateResponse(HttpStatusCode.OK, events, "application/json")
-                : req.CreateResponse(HttpStatusCode.BadRequest, "", "application/json");
+            // filter on dresscode
+            var query = req.RequestUri.ParseQueryString();
+            if (query.HasKeys()) {
+                var value = query.Get("dresscode");
+                if (!string.IsNullOrWhiteSpace(value)) {
+                    events.RemoveAll(e => !e.DressCode.Contains(value, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            return req.CreateResponse(HttpStatusCode.OK, events, "application/json");
 
         }
-
 
         [FunctionName("GetEvent")]
         public static async Task<HttpResponseMessage> GetEventAsync(
